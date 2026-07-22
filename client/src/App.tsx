@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import ChartOfAccounts from "./pages/ChartOfAccounts";
+import Clients from "./pages/Clients";
 import GeneralJournal from "./pages/GeneralJournal";
 import GeneralLedger from "./pages/GeneralLedger";
 import Revenues from "./pages/Revenues";
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="chart-of-accounts" element={<ChartOfAccounts />} />
+          <Route path="clients" element={<Clients />} />
           <Route path="general-journal" element={<GeneralJournal />} />
           <Route path="general-ledger" element={<GeneralLedger />} />
           <Route path="revenues" element={<Revenues />} />

@@ -11,11 +11,13 @@ import {
   PlaneIcon,
   ReportsIcon,
   RevenueIcon,
+  UsersIcon,
 } from "./Icons";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookIcon },
+  { to: "/clients", label: "Clients", icon: UsersIcon },
   { to: "/general-journal", label: "General Journal", icon: JournalIcon },
   { to: "/general-ledger", label: "General Ledger", icon: LedgerIcon },
   { to: "/revenues", label: "Revenues", icon: RevenueIcon },

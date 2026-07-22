@@ -46,8 +46,6 @@ export default function Expenses() {
       .then(([acc, je]) => {
         setAccounts(acc);
         setEntries(je);
-        setExpenseAccountId((prev) => prev || acc.find((a) => a.type === "expense")?.id || "");
-        setPaymentAccountId((prev) => prev || acc.find((a) => a.type === "asset" && /cash/i.test(a.name))?.id || "");
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -154,8 +152,8 @@ export default function Expenses() {
             {!clientsLoading && clients.length === 0 && (
               <span className="mt-1 block text-xs text-slate-400">
                 No clients yet.{" "}
-                <Link to="/chart-of-accounts" className="text-brand-600 hover:underline">
-                  Add one in Chart of Accounts
+                <Link to="/clients" className="text-brand-600 hover:underline">
+                  Add one in Clients
                 </Link>
                 .
               </span>
