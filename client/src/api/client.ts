@@ -8,8 +8,10 @@ import type {
   IncomeStatementResponse,
   JournalEntry,
   LedgerResponse,
+  RecurringTransaction,
   RevenueByClientResponse,
   TrialBalanceResponse,
+  Vendor,
 } from "../types";
 
 const BASE = "/api";
@@ -69,7 +71,7 @@ export const api = {
       expenseAccountId: string;
       paymentAccountId: string;
       amount: number;
-      clientId: string;
+      vendorId: string;
       reference?: string;
     }) => request<JournalEntry>("/transactions/expense", { method: "POST", body: JSON.stringify(data) }),
   },
@@ -111,5 +113,20 @@ export const api = {
     update: (id: string, data: Partial<Client>) =>
       request<Client>(`/clients/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/clients/${id}`, { method: "DELETE" }),
+  },
+  vendors: {
+    list: () => request<Vendor[]>("/vendors"),
+    create: (data: Partial<Vendor>) => request<Vendor>("/vendors", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Vendor>) =>
+      request<Vendor>(`/vendors/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/vendors/${id}`, { method: "DELETE" }),
+  },
+  recurring: {
+    list: () => request<RecurringTransaction[]>("/recurring"),
+    create: (data: Partial<RecurringTransaction>) =>
+      request<RecurringTransaction>("/recurring", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<RecurringTransaction>) =>
+      request<RecurringTransaction>(`/recurring/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/recurring/${id}`, { method: "DELETE" }),
   },
 };

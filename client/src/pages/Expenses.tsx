@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
-import { formatCurrency, formatDate, fullName, todayISO } from "../utils/format";
+import { formatCurrency, formatDate, todayISO } from "../utils/format";
 import { isDateInClosedPeriod, periodLabel } from "../utils/period";
 import { useClosedPeriods } from "../utils/useClosedPeriods";
-import { useClients } from "../utils/useClients";
+import { useVendors } from "../utils/useVendors";
 import type { Account, JournalEntry } from "../types";
 
 export default function Expenses() {
@@ -16,11 +16,11 @@ export default function Expenses() {
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const closedPeriods = useClosedPeriods();
-  const { clients, loading: clientsLoading } = useClients();
+  const { vendors, loading: vendorsLoading } = useVendors();
 
   const [date, setDate] = useState(todayISO());
   const [description, setDescription] = useState("");
-  const [clientId, setClientId] = useState("");
+  const [vendorId, setVendorId] = useState("");
   const [expenseAccountId, setExpenseAccountId] = useState("");
   const [paymentAccountId, setPaymentAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -37,8 +37,11 @@ export default function Expenses() {
     [accounts]
   );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
-  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
-  const sortedClients = useMemo(() => [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b))), [clients]);
+  const vendorById = useMemo(() => new Map(vendors.map((v) => [v.id, v])), [vendors]);
+  const sortedVendors = useMemo(
+    () => [...vendors].sort((a, b) => a.businessName.localeCompare(b.businessName)),
+    [vendors]
+  );
 
   function load() {
     setLoading(true);
@@ -64,7 +67,7 @@ export default function Expenses() {
       setError("Enter an amount greater than zero.");
       return;
     }
-    if (!clientId) {
+    if (!vendorId) {
       setError("Select a payee.");
       return;
     }
@@ -77,14 +80,14 @@ export default function Expenses() {
       await api.transactions.expense({
         date,
         description,
-        clientId,
+        vendorId,
         expenseAccountId,
         paymentAccountId,
         amount: amt,
       });
       setSuccess(`Recorded ${formatCurrency(amt)} of expense.`);
       setDescription("");
-      setClientId("");
+      setVendorId("");
       setAmount("");
       load();
     } catch (err) {
@@ -141,19 +144,19 @@ export default function Expenses() {
             </select>
           </Field>
           <Field label="Payee">
-            <select className={inputClass} value={clientId} onChange={(e) => setClientId(e.target.value)} required>
-              <option value="">Select client…</option>
-              {sortedClients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {fullName(c)}
+            <select className={inputClass} value={vendorId} onChange={(e) => setVendorId(e.target.value)} required>
+              <option value="">Select vendor…</option>
+              {sortedVendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.businessName}
                 </option>
               ))}
             </select>
-            {!clientsLoading && clients.length === 0 && (
+            {!vendorsLoading && vendors.length === 0 && (
               <span className="mt-1 block text-xs text-slate-400">
-                No clients yet.{" "}
-                <Link to="/clients" className="text-brand-600 hover:underline">
-                  Add one in Clients
+                No vendors yet.{" "}
+                <Link to="/vendors" className="text-brand-600 hover:underline">
+                  Add one in Vendors
                 </Link>
                 .
               </span>
@@ -225,7 +228,7 @@ export default function Expenses() {
                       <td className="px-5 py-2.5 text-slate-500">{formatDate(e.date)}</td>
                       <td className="px-5 py-2.5 text-slate-700 dark:text-slate-200">{e.memo}</td>
                       <td className="px-5 py-2.5 text-slate-500">
-                        {e.clientId && clientById.get(e.clientId) ? fullName(clientById.get(e.clientId)!) : "—"}
+                        {e.vendorId && vendorById.get(e.vendorId) ? vendorById.get(e.vendorId)!.businessName : "—"}
                       </td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(expLine?.accountId ?? "")?.name}</td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(payLine?.accountId ?? "")?.name}</td>

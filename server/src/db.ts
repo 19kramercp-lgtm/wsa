@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
-import type { Account, CashFlowCategory, ClosedPeriod, Database } from "./types.js";
+import type { Account, CashFlowCategory, ClosedPeriod, Database, JournalEntry, RecurringFrequency } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR ? process.env.DATA_DIR : path.join(__dirname, "..", "data");
@@ -104,6 +104,8 @@ function defaultDatabase(): Database {
     journalEntries: [],
     closedPeriods: [],
     clients: [],
+    vendors: [],
+    recurringTransactions: [],
     meta: { nextJournalNumber: 1 },
   };
 }
@@ -121,13 +123,17 @@ export function inferCashFlowCategory(account: Pick<Account, "type" | "name">): 
 function migrate(db: Database): Database {
   if (!db.closedPeriods) db.closedPeriods = [];
   if (!db.clients) db.clients = [];
+  if (!db.vendors) db.vendors = [];
+  if (!db.recurringTransactions) db.recurringTransactions = [];
   for (const account of db.accounts) {
     if (!account.cashFlowCategory) {
       account.cashFlowCategory = inferCashFlowCategory(account);
     }
   }
-  for (const entry of db.journalEntries) {
+  for (const entry of db.journalEntries as unknown as Record<string, unknown>[]) {
     if (entry.clientId === undefined) entry.clientId = null;
+    if (entry.vendorId === undefined) entry.vendorId = null;
+    if (entry.recurringTransactionId === undefined) entry.recurringTransactionId = null;
   }
   for (const client of db.clients as unknown as Record<string, unknown>[]) {
     if (typeof client.firstName !== "string") {
@@ -148,6 +154,105 @@ function migrate(db: Database): Database {
   return db;
 }
 
+export function addInterval(dateISO: string, frequency: RecurringFrequency): string {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  if (frequency === "weekly") {
+    const date = new Date(Date.UTC(y, m - 1, d));
+    date.setUTCDate(date.getUTCDate() + 7);
+    return date.toISOString().slice(0, 10);
+  }
+  if (frequency === "monthly") {
+    let newMonth = m + 1;
+    let newYear = y;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    const lastDay = new Date(Date.UTC(newYear, newMonth, 0)).getUTCDate();
+    const day = Math.min(d, lastDay);
+    return `${newYear}-${String(newMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  // yearly
+  const newYear = y + 1;
+  const lastDay = new Date(Date.UTC(newYear, m, 0)).getUTCDate();
+  const day = Math.min(d, lastDay);
+  return `${newYear}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// Generates any journal entries that are due for active recurring
+// transactions, catching up on however many occurrences have passed since
+// the app was last opened. Returns whether anything changed so callers know
+// whether to persist. Occurrences that would land in a closed period are
+// skipped (but still advance nextRunDate) so one blocked month doesn't
+// stall all future occurrences.
+export function processDueRecurring(db: Database): { created: number } {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let created = 0;
+
+  for (const rt of db.recurringTransactions) {
+    if (!rt.active) continue;
+    let guard = 0;
+    while (rt.nextRunDate <= todayStr && (!rt.endDate || rt.nextRunDate <= rt.endDate) && guard < 1000) {
+      guard++;
+      const occurrenceDate = rt.nextRunDate;
+      const isClosed = isPeriodClosed(occurrenceDate, db.closedPeriods);
+
+      if (!isClosed) {
+        const now = new Date().toISOString();
+        const memo = `${rt.description} (Recurring)`;
+        let entry: JournalEntry | null = null;
+
+        if (rt.type === "revenue" && rt.revenueAccountId && rt.depositAccountId) {
+          entry = {
+            id: uuidv4(),
+            date: occurrenceDate,
+            memo,
+            reference: String(db.meta.nextJournalNumber).padStart(5, "0"),
+            source: "revenue",
+            clientId: rt.clientId,
+            vendorId: null,
+            recurringTransactionId: rt.id,
+            lines: [
+              { id: uuidv4(), accountId: rt.depositAccountId, debit: rt.amount, credit: 0, description: memo },
+              { id: uuidv4(), accountId: rt.revenueAccountId, debit: 0, credit: rt.amount, description: memo },
+            ],
+            createdAt: now,
+            updatedAt: now,
+          };
+        } else if (rt.type === "expense" && rt.expenseAccountId && rt.paymentAccountId) {
+          entry = {
+            id: uuidv4(),
+            date: occurrenceDate,
+            memo,
+            reference: String(db.meta.nextJournalNumber).padStart(5, "0"),
+            source: "expense",
+            clientId: null,
+            vendorId: rt.vendorId,
+            recurringTransactionId: rt.id,
+            lines: [
+              { id: uuidv4(), accountId: rt.expenseAccountId, debit: rt.amount, credit: 0, description: memo },
+              { id: uuidv4(), accountId: rt.paymentAccountId, debit: 0, credit: rt.amount, description: memo },
+            ],
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
+
+        if (entry) {
+          db.meta.nextJournalNumber += 1;
+          db.journalEntries.push(entry);
+          rt.lastRunDate = occurrenceDate;
+          created++;
+        }
+      }
+
+      rt.nextRunDate = addInterval(rt.nextRunDate, rt.frequency);
+    }
+  }
+
+  return { created };
+}
+
 let writeQueue: Promise<void> = Promise.resolve();
 
 async function ensureDataFile(): Promise<void> {
@@ -162,7 +267,12 @@ async function ensureDataFile(): Promise<void> {
 export async function readDatabase(): Promise<Database> {
   await ensureDataFile();
   const raw = await fs.readFile(DATA_FILE, "utf-8");
-  return migrate(JSON.parse(raw) as Database);
+  const db = migrate(JSON.parse(raw) as Database);
+  const { created } = processDueRecurring(db);
+  if (created > 0) {
+    await writeDatabase(db);
+  }
+  return db;
 }
 
 export async function writeDatabase(db: Database): Promise<void> {

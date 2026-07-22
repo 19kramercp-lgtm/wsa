@@ -123,3 +123,28 @@ export const UsersIcon = (props: SVGProps<SVGSVGElement>) => (
     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
+
+export const BuildingIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <rect x="4" y="2" width="16" height="20" rx="1" />
+    <line x1="8" y1="6" x2="8" y2="6" />
+    <line x1="12" y1="6" x2="12" y2="6" />
+    <line x1="16" y1="6" x2="16" y2="6" />
+    <line x1="8" y1="10" x2="8" y2="10" />
+    <line x1="12" y1="10" x2="12" y2="10" />
+    <line x1="16" y1="10" x2="16" y2="10" />
+    <line x1="8" y1="14" x2="8" y2="14" />
+    <line x1="12" y1="14" x2="12" y2="14" />
+    <line x1="16" y1="14" x2="16" y2="14" />
+    <path d="M9 22v-4h6v4" />
+  </svg>
+);
+
+export const RepeatIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <polyline points="17,1 21,5 17,9" />
+    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+    <polyline points="7,23 3,19 7,15" />
+    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+  </svg>
+);

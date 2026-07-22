@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   BookIcon,
+  BuildingIcon,
   CloseIcon,
   ExpenseIcon,
   HomeIcon,
@@ -9,6 +10,7 @@ import {
   LedgerIcon,
   MenuIcon,
   PlaneIcon,
+  RepeatIcon,
   ReportsIcon,
   RevenueIcon,
   UsersIcon,
@@ -18,10 +20,12 @@ const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookIcon },
   { to: "/clients", label: "Clients", icon: UsersIcon },
+  { to: "/vendors", label: "Vendors", icon: BuildingIcon },
   { to: "/general-ledger", label: "General Ledger", icon: LedgerIcon },
   { to: "/general-journal", label: "General Journal", icon: JournalIcon },
   { to: "/revenues", label: "Revenues", icon: RevenueIcon },
   { to: "/expenses", label: "Expenses", icon: ExpenseIcon },
+  { to: "/recurring", label: "Recurring Transactions", icon: RepeatIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
 ];
 

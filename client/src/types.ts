@@ -33,6 +33,8 @@ export interface JournalEntry {
   source: JournalSource;
   lines: JournalLine[];
   clientId: string | null;
+  vendorId: string | null;
+  recurringTransactionId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -164,4 +166,39 @@ export interface RevenueByClientResponse {
   end: string | null;
   rows: RevenueByClientRow[];
   totalRevenue: number;
+}
+
+export interface Vendor {
+  id: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  createdAt: string;
+}
+
+export type RecurringFrequency = "weekly" | "monthly" | "yearly";
+export type RecurringType = "revenue" | "expense";
+
+export interface RecurringTransaction {
+  id: string;
+  type: RecurringType;
+  description: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  startDate: string;
+  nextRunDate: string;
+  endDate: string | null;
+  active: boolean;
+  revenueAccountId: string | null;
+  depositAccountId: string | null;
+  clientId: string | null;
+  expenseAccountId: string | null;
+  paymentAccountId: string | null;
+  vendorId: string | null;
+  lastRunDate: string | null;
+  createdAt: string;
 }

@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, fullName, todayISO } from "../utils/format"
 import { isDateInClosedPeriod, periodLabel } from "../utils/period";
 import { useClosedPeriods } from "../utils/useClosedPeriods";
 import { useClients } from "../utils/useClients";
+import { useVendors } from "../utils/useVendors";
 import type { Account, JournalEntry, JournalLine } from "../types";
 
 interface DraftLine {
@@ -26,15 +27,22 @@ export default function GeneralJournal() {
   const [saving, setSaving] = useState(false);
   const closedPeriods = useClosedPeriods();
   const { clients } = useClients();
+  const { vendors } = useVendors();
 
   const [date, setDate] = useState(todayISO());
   const [memo, setMemo] = useState("");
   const [clientId, setClientId] = useState("");
+  const [vendorId, setVendorId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([emptyLine(), emptyLine()]);
 
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const vendorById = useMemo(() => new Map(vendors.map((v) => [v.id, v])), [vendors]);
   const sortedClients = useMemo(() => [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b))), [clients]);
+  const sortedVendors = useMemo(
+    () => [...vendors].sort((a, b) => a.businessName.localeCompare(b.businessName)),
+    [vendors]
+  );
 
   function load() {
     setLoading(true);
@@ -61,6 +69,7 @@ export default function GeneralJournal() {
     setDate(todayISO());
     setMemo("");
     setClientId("");
+    setVendorId("");
     setLines([emptyLine(), emptyLine()]);
   }
 
@@ -95,6 +104,7 @@ export default function GeneralJournal() {
         lines: payloadLines as JournalLine[],
         source: "manual",
         clientId: clientId || null,
+        vendorId: vendorId || null,
       });
       resetForm();
       setShowForm(false);
@@ -159,6 +169,16 @@ export default function GeneralJournal() {
                   {sortedClients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {fullName(c)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Vendor (optional)" hint="Tag a vendor, e.g. to record a payment against what you owe them">
+                <select className={inputClass} value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
+                  <option value="">No vendor</option>
+                  {sortedVendors.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.businessName}
                     </option>
                   ))}
                 </select>
@@ -304,6 +324,9 @@ export default function GeneralJournal() {
                   </Badge>
                   {entry.clientId && clientById.get(entry.clientId) && (
                     <Badge tone="slate">{fullName(clientById.get(entry.clientId)!)}</Badge>
+                  )}
+                  {entry.vendorId && vendorById.get(entry.vendorId) && (
+                    <Badge tone="slate">{vendorById.get(entry.vendorId)!.businessName}</Badge>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
