@@ -1,6 +1,5 @@
 import type {
   Account,
-  Aircraft,
   AgedPayablesResponse,
   AgedReceivablesResponse,
   BalanceSheetResponse,
@@ -11,11 +10,8 @@ import type {
   EndorsementTemplate,
   Far61Requirement,
   IncomeStatementResponse,
-  Instructor,
   JournalEntry,
   LedgerResponse,
-  LogbookEntry,
-  LogbookTotals,
   RecurringTransaction,
   RevenueByClientResponse,
   StudentRequirementsResponse,
@@ -139,33 +135,6 @@ export const api = {
     update: (id: string, data: Partial<RecurringTransaction>) =>
       request<RecurringTransaction>(`/recurring/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/recurring/${id}`, { method: "DELETE" }),
-  },
-  instructors: {
-    list: () => request<Instructor[]>("/instructors"),
-    create: (data: Partial<Instructor>) =>
-      request<Instructor>("/instructors", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Instructor>) =>
-      request<Instructor>(`/instructors/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-    remove: (id: string) => request<void>(`/instructors/${id}`, { method: "DELETE" }),
-  },
-  aircraft: {
-    list: () => request<Aircraft[]>("/aircraft"),
-    create: (data: Partial<Aircraft>) => request<Aircraft>("/aircraft", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Aircraft>) =>
-      request<Aircraft>(`/aircraft/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-    remove: (id: string) => request<void>(`/aircraft/${id}`, { method: "DELETE" }),
-  },
-  logbook: {
-    list: (params?: { clientId?: string }) => {
-      const qs = new URLSearchParams(params as Record<string, string>).toString();
-      return request<LogbookEntry[]>(`/logbook${qs ? `?${qs}` : ""}`);
-    },
-    totals: (clientId: string) => request<LogbookTotals>(`/logbook/totals/${clientId}`),
-    create: (data: Partial<LogbookEntry>) =>
-      request<LogbookEntry>("/logbook", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<LogbookEntry>) =>
-      request<LogbookEntry>(`/logbook/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-    remove: (id: string) => request<void>(`/logbook/${id}`, { method: "DELETE" }),
   },
   endorsements: {
     templates: () => request<EndorsementTemplate[]>("/endorsements/templates"),

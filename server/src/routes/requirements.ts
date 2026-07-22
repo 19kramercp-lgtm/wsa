@@ -2,7 +2,6 @@ import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { readDatabase, writeDatabase } from "../db.js";
 import { FAR61_REQUIREMENTS } from "../reference.js";
-import { computeLogbookTotals } from "./logbook.js";
 import type { CertificateTrack } from "../types.js";
 
 const router = Router();
@@ -15,7 +14,7 @@ router.get("/definitions", (_req, res) => {
 
 // Merged view for one student: every FAR 61 requirement grouped by
 // certificate, each paired with its saved checkbox state (defaulting to
-// unmet), plus the student's live logbook totals for reference.
+// unmet).
 router.get("/:clientId", async (req, res) => {
   const db = await readDatabase();
   const client = db.clients.find((c) => c.id === req.params.clientId);
@@ -38,9 +37,7 @@ router.get("/:clientId", async (req, res) => {
     }),
   }));
 
-  const totals = computeLogbookTotals(db.logbookEntries.filter((e) => e.clientId === client.id));
-
-  res.json({ clientId: client.id, byCertificate, totals });
+  res.json({ clientId: client.id, byCertificate });
 });
 
 router.put("/:clientId/:requirementId", async (req, res) => {

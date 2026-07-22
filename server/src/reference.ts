@@ -311,41 +311,90 @@ export interface EndorsementTemplate {
   expirationDays?: number;
 }
 
-// Standard FAA logbook endorsements (per AC 61-65 guidance). expirationDays
-// is set for the handful of endorsements that carry a currency window;
-// everything else is a one-time endorsement with no expiration.
+// Standard FAA logbook endorsements, organized to follow the training-stage
+// structure FAA Advisory Circular 61-65 uses for its endorsement exhibits
+// (student pilot solo progression, then knowledge/practical test
+// prerequisites for each certificate, then additional ratings and
+// recency). expirationDays is set for the handful of endorsements that
+// carry a currency window; everything else is a one-time endorsement.
 export const ENDORSEMENT_TEMPLATES: EndorsementTemplate[] = [
+  // Student pilot — presolo and solo progression
   { id: "presolo-knowledge", title: "Presolo aeronautical knowledge test", farReference: "61.87(b)", certificate: "private" },
   { id: "presolo-training", title: "Presolo flight training", farReference: "61.87(c)", certificate: "private" },
-  { id: "solo", title: "Solo flight", farReference: "61.87(n)", certificate: "private", expirationDays: 90 },
+  { id: "solo", title: "Student pilot solo flight", farReference: "61.87(n)", certificate: "private", expirationDays: 90 },
+  {
+    id: "solo-repeat-same-airport",
+    title: "Solo takeoffs and landings at the same airport",
+    farReference: "61.93(b)(1)",
+    certificate: "private",
+  },
+  {
+    id: "solo-another-airport",
+    title: "Solo takeoffs and landings at another airport within 25 nm",
+    farReference: "61.93(b)(1)",
+    certificate: "private",
+  },
+  {
+    id: "solo-repeat-another-airport",
+    title: "Repeated solo flights to another airport within 25 nm",
+    farReference: "61.93(b)(2)",
+    certificate: "private",
+  },
+  {
+    id: "solo-xc-initial",
+    title: "Initial solo cross-country flight",
+    farReference: "61.93(c)(1)",
+    certificate: "private",
+  },
+  {
+    id: "solo-xc-repeat",
+    title: "Repeated solo cross-country flights, not more than 50 nm from home airport",
+    farReference: "61.93(c)(2)",
+    certificate: "private",
+  },
+  {
+    id: "solo-xc-review",
+    title: "Solo cross-country flight — conditions and route reviewed",
+    farReference: "61.93(c)(3)",
+    certificate: "private",
+  },
+  {
+    id: "solo-class-b",
+    title: "Solo flight in Class B airspace",
+    farReference: "61.95(a)",
+    certificate: "private",
+  },
+  {
+    id: "solo-class-b-airport",
+    title: "Solo flight to, from, or at an airport within Class B airspace",
+    farReference: "61.95(b)",
+    certificate: "private",
+  },
   {
     id: "solo-tower",
     title: "Solo takeoffs and landings at an airport with an operating control tower",
     farReference: "61.94",
     certificate: "private",
   },
-  { id: "solo-xc", title: "Solo cross-country flight", farReference: "61.93(c)(1)", certificate: "private" },
-  {
-    id: "solo-xc-repeat",
-    title: "Repeated solo cross-country flights, not more than 25 nm from home airport",
-    farReference: "61.93(c)(2)",
-    certificate: "private",
-  },
-  {
-    id: "solo-class-bcd",
-    title: "Solo flight in Class B/C/D airspace or at an airport with an operating control tower",
-    farReference: "61.95(a)",
-    certificate: "private",
-  },
-  {
-    id: "knowledge-test",
-    title: "Aeronautical knowledge test",
-    farReference: "61.35(a)(1)",
-    certificate: "general",
-  },
+
+  // General — knowledge and practical test prerequisites (apply at every certificate level)
+  { id: "knowledge-test", title: "Aeronautical knowledge test", farReference: "61.35(a)(1)", certificate: "general" },
   { id: "practical-test", title: "Recommendation for practical test", farReference: "61.39(a)(6)", certificate: "general" },
   { id: "retest", title: "Additional training after a failed test", farReference: "61.49", certificate: "general" },
-  { id: "flight-review", title: "Flight review", farReference: "61.56(a)", certificate: "general", expirationDays: 730 },
+
+  // Instrument rating
+  {
+    id: "instrument-knowledge-test",
+    title: "Instrument rating aeronautical knowledge test",
+    farReference: "61.65(a)(2)",
+    certificate: "instrument",
+  },
+  {
+    id: "instrument-practical-test",
+    title: "Instrument rating practical test",
+    farReference: "61.65(a)(6)",
+    certificate: "instrument",
+  },
   {
     id: "ipc",
     title: "Instrument proficiency check",
@@ -353,9 +402,55 @@ export const ENDORSEMENT_TEMPLATES: EndorsementTemplate[] = [
     certificate: "instrument",
     expirationDays: 180,
   },
+
+  // Commercial pilot
+  {
+    id: "commercial-knowledge-test",
+    title: "Commercial pilot aeronautical knowledge test",
+    farReference: "61.35(a)(1)",
+    certificate: "commercial",
+  },
+  {
+    id: "commercial-practical-test",
+    title: "Commercial pilot practical test",
+    farReference: "61.39(a)(6)",
+    certificate: "commercial",
+  },
+
+  // Certificated flight instructor
+  { id: "spin-training", title: "Spin awareness training endorsement", farReference: "61.183(g)", certificate: "cfi" },
+  {
+    id: "cfi-fundamentals-knowledge-test",
+    title: "Fundamentals of instructing knowledge test",
+    farReference: "61.185(a)(1)",
+    certificate: "cfi",
+  },
+  {
+    id: "cfi-knowledge-test",
+    title: "Flight instructor aeronautical knowledge test",
+    farReference: "61.35(a)(1)",
+    certificate: "cfi",
+  },
+  {
+    id: "cfi-practical-test",
+    title: "Flight instructor practical test",
+    farReference: "61.39(a)(6)",
+    certificate: "cfi",
+  },
+  {
+    id: "cfi-renewal",
+    title: "Flight instructor certificate renewal — flight training",
+    farReference: "61.197(a)(1)",
+    certificate: "cfi",
+    expirationDays: 730,
+  },
+
+  // Additional aircraft category/class/type privileges
   { id: "complex", title: "Complex airplane endorsement", farReference: "61.31(e)", certificate: "general" },
   { id: "high-performance", title: "High-performance airplane endorsement", farReference: "61.31(f)", certificate: "general" },
   { id: "tailwheel", title: "Tailwheel airplane endorsement", farReference: "61.31(i)", certificate: "general" },
   { id: "high-altitude", title: "High-altitude/pressurized airplane endorsement", farReference: "61.31(g)", certificate: "general" },
-  { id: "spin-training", title: "Spin awareness training endorsement", farReference: "61.183(g)", certificate: "cfi" },
+
+  // Recency of experience
+  { id: "flight-review", title: "Flight review", farReference: "61.56(a)", certificate: "general", expirationDays: 730 },
 ];

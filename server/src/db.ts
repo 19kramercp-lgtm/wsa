@@ -106,9 +106,6 @@ function defaultDatabase(): Database {
     clients: [],
     vendors: [],
     recurringTransactions: [],
-    instructors: [],
-    aircraft: [],
-    logbookEntries: [],
     endorsements: [],
     requirementChecks: [],
     meta: { nextJournalNumber: 1 },
@@ -130,11 +127,12 @@ function migrate(db: Database): Database {
   if (!db.clients) db.clients = [];
   if (!db.vendors) db.vendors = [];
   if (!db.recurringTransactions) db.recurringTransactions = [];
-  if (!db.instructors) db.instructors = [];
-  if (!db.aircraft) db.aircraft = [];
-  if (!db.logbookEntries) db.logbookEntries = [];
   if (!db.endorsements) db.endorsements = [];
   if (!db.requirementChecks) db.requirementChecks = [];
+  for (const endorsement of db.endorsements as unknown as Record<string, unknown>[]) {
+    if (typeof endorsement.instructorName !== "string") endorsement.instructorName = "";
+    delete endorsement.instructorId;
+  }
   for (const account of db.accounts) {
     if (!account.cashFlowCategory) {
       account.cashFlowCategory = inferCashFlowCategory(account);

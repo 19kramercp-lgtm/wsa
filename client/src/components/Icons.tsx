@@ -155,22 +155,6 @@ export const AwardIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const CheckSquareIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg {...base(props)}>
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <polyline points="8,12 11,15 17,9" />
-  </svg>
-);
-
-export const IdBadgeIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg {...base(props)}>
-    <rect x="5" y="3" width="14" height="18" rx="2" />
-    <circle cx="12" cy="10" r="2.5" />
-    <path d="M8 17c0-1.7 1.8-3 4-3s4 1.3 4 3" />
-    <line x1="9" y1="7" x2="9" y2="7" />
-  </svg>
-);
-
 export const RepeatIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg {...base(props)}>
     <polyline points="17,1 21,5 17,9" />

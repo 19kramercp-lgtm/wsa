@@ -27,16 +27,13 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { clientId, templateId, title, farReference, instructorId, dateGiven, notes } = req.body ?? {};
+  const { clientId, templateId, title, farReference, instructorName, dateGiven, notes } = req.body ?? {};
   if (!clientId || !dateGiven) {
     return res.status(400).json({ error: "clientId and dateGiven are required" });
   }
   const db = await readDatabase();
   if (!db.clients.some((c) => c.id === clientId)) {
     return res.status(400).json({ error: "clientId must reference a valid client" });
-  }
-  if (instructorId && !db.instructors.some((i) => i.id === instructorId)) {
-    return res.status(400).json({ error: "instructorId must reference a valid instructor" });
   }
 
   const template = templateId ? ENDORSEMENT_TEMPLATES.find((t) => t.id === templateId) : undefined;
@@ -56,7 +53,7 @@ router.post("/", async (req, res) => {
     templateId: template ? template.id : null,
     title: String(resolvedTitle).trim(),
     farReference: resolvedFar ?? "",
-    instructorId: instructorId || null,
+    instructorName: instructorName ?? "",
     dateGiven: String(dateGiven),
     expiresOn: template?.expirationDays ? addDays(String(dateGiven), template.expirationDays) : null,
     notes: notes ?? "",
@@ -72,12 +69,9 @@ router.put("/:id", async (req, res) => {
   const endorsement = db.endorsements.find((e) => e.id === req.params.id);
   if (!endorsement) return res.status(404).json({ error: "Endorsement not found" });
 
-  const { instructorId, dateGiven, notes, title, farReference } = req.body ?? {};
-  if (instructorId !== undefined) {
-    if (instructorId && !db.instructors.some((i) => i.id === instructorId)) {
-      return res.status(400).json({ error: "instructorId must reference a valid instructor" });
-    }
-    endorsement.instructorId = instructorId || null;
+  const { instructorName, dateGiven, notes, title, farReference } = req.body ?? {};
+  if (instructorName !== undefined) {
+    endorsement.instructorName = String(instructorName);
   }
   if (dateGiven !== undefined) {
     endorsement.dateGiven = String(dateGiven);

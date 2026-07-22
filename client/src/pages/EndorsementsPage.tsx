@@ -3,30 +3,27 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { fullName, formatDate, todayISO } from "../utils/format";
-import type { Client, EndorsementRecord, Instructor } from "../types";
+import type { Client, EndorsementRecord } from "../types";
 
 export default function EndorsementsPage() {
   const [endorsements, setEndorsements] = useState<EndorsementRecord[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [clientId, setClientId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([api.endorsements.list(), api.clients.list(), api.instructors.list()])
-      .then(([e, c, i]) => {
+    Promise.all([api.endorsements.list(), api.clients.list()])
+      .then(([e, c]) => {
         setEndorsements(e);
         setClients(c);
-        setInstructors(i);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
-  const instructorById = useMemo(() => new Map(instructors.map((i) => [i.id, i])), [instructors]);
   const sortedClients = useMemo(() => [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b))), [clients]);
 
   const filtered = (clientId ? endorsements.filter((e) => e.clientId === clientId) : endorsements)
@@ -87,11 +84,7 @@ export default function EndorsementsPage() {
                       </td>
                       <td className="px-5 py-2.5 text-slate-700 dark:text-slate-200">{record.title}</td>
                       <td className="px-5 py-2.5 font-mono text-xs text-slate-400">{record.farReference || "—"}</td>
-                      <td className="px-5 py-2.5 text-slate-500">
-                        {record.instructorId
-                          ? fullName(instructorById.get(record.instructorId) ?? { firstName: "—", lastName: "" })
-                          : "—"}
-                      </td>
+                      <td className="px-5 py-2.5 text-slate-500">{record.instructorName || "—"}</td>
                       <td className="px-5 py-2.5 text-slate-500">{formatDate(record.dateGiven)}</td>
                       <td className="px-5 py-2.5">
                         {record.expiresOn ? (

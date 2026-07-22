@@ -1,25 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
-import { EditIcon, TrashIcon } from "../components/Icons";
+import { TrashIcon } from "../components/Icons";
 import { fullName, formatDate, todayISO } from "../utils/format";
-import type {
-  Aircraft,
-  CertificateTrack,
-  Client,
-  EndorsementRecord,
-  EndorsementTemplate,
-  Instructor,
-  LogbookEntry,
-  StudentRequirementsResponse,
-} from "../types";
+import type { CertificateTrack, Client, EndorsementRecord, EndorsementTemplate, StudentRequirementsResponse } from "../types";
 
-type Tab = "logbook" | "requirements" | "endorsements";
+type Tab = "requirements" | "endorsements";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "logbook", label: "Logbook" },
-  { id: "requirements", label: "Requirements" },
+  { id: "requirements", label: "FAR Requirements" },
   { id: "endorsements", label: "Endorsements" },
 ];
 
@@ -30,16 +20,12 @@ const CERTIFICATE_LABELS: Record<CertificateTrack, string> = {
   cfi: "Certificated Flight Instructor",
 };
 
-function hours(n: number): string {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-}
-
 export default function StudentProfile() {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("logbook");
+  const [tab, setTab] = useState<Tab>("requirements");
 
   useEffect(() => {
     if (!clientId) return;
@@ -84,379 +70,8 @@ export default function StudentProfile() {
         ))}
       </div>
 
-      {tab === "logbook" && <LogbookTab clientId={clientId} />}
       {tab === "requirements" && <RequirementsTab clientId={clientId} />}
       {tab === "endorsements" && <EndorsementsTab clientId={clientId} />}
-    </div>
-  );
-}
-
-const emptyLogbookForm = {
-  id: undefined as string | undefined,
-  date: todayISO(),
-  aircraftId: "",
-  instructorId: "",
-  route: "",
-  totalTime: "",
-  picTime: "",
-  soloTime: "",
-  crossCountryTime: "",
-  nightTime: "",
-  actualInstrumentTime: "",
-  simulatedInstrumentTime: "",
-  dualReceived: "",
-  dayLandings: "",
-  nightLandings: "",
-  remarks: "",
-};
-
-function LogbookTab({ clientId }: { clientId: string }) {
-  const [entries, setEntries] = useState<LogbookEntry[]>([]);
-  const [aircraft, setAircraft] = useState<Aircraft[]>([]);
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
-  const [totals, setTotals] = useState<Awaited<ReturnType<typeof api.logbook.totals>> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyLogbookForm);
-
-  function load() {
-    setLoading(true);
-    Promise.all([
-      api.logbook.list({ clientId }),
-      api.aircraft.list(),
-      api.instructors.list(),
-      api.logbook.totals(clientId),
-    ])
-      .then(([e, a, i, t]) => {
-        setEntries(e);
-        setAircraft(a);
-        setInstructors(i);
-        setTotals(t);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(load, [clientId]);
-
-  const aircraftById = useMemo(() => new Map(aircraft.map((a) => [a.id, a])), [aircraft]);
-  const instructorById = useMemo(() => new Map(instructors.map((i) => [i.id, i])), [instructors]);
-  const activeAircraft = useMemo(() => aircraft.filter((a) => a.active), [aircraft]);
-  const activeInstructors = useMemo(() => instructors.filter((i) => i.active), [instructors]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSaving(true);
-    try {
-      const payload = {
-        clientId,
-        date: form.date,
-        aircraftId: form.aircraftId || null,
-        instructorId: form.instructorId || null,
-        route: form.route,
-        totalTime: Number(form.totalTime) || 0,
-        picTime: Number(form.picTime) || 0,
-        soloTime: Number(form.soloTime) || 0,
-        crossCountryTime: Number(form.crossCountryTime) || 0,
-        nightTime: Number(form.nightTime) || 0,
-        actualInstrumentTime: Number(form.actualInstrumentTime) || 0,
-        simulatedInstrumentTime: Number(form.simulatedInstrumentTime) || 0,
-        dualReceived: Number(form.dualReceived) || 0,
-        dayLandings: Number(form.dayLandings) || 0,
-        nightLandings: Number(form.nightLandings) || 0,
-        remarks: form.remarks,
-      };
-      if (form.id) {
-        await api.logbook.update(form.id, payload);
-      } else {
-        await api.logbook.create(payload);
-      }
-      setForm(emptyLogbookForm);
-      setShowForm(false);
-      load();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function startEdit(entry: LogbookEntry) {
-    setForm({
-      id: entry.id,
-      date: entry.date,
-      aircraftId: entry.aircraftId ?? "",
-      instructorId: entry.instructorId ?? "",
-      route: entry.route,
-      totalTime: String(entry.totalTime || ""),
-      picTime: String(entry.picTime || ""),
-      soloTime: String(entry.soloTime || ""),
-      crossCountryTime: String(entry.crossCountryTime || ""),
-      nightTime: String(entry.nightTime || ""),
-      actualInstrumentTime: String(entry.actualInstrumentTime || ""),
-      simulatedInstrumentTime: String(entry.simulatedInstrumentTime || ""),
-      dualReceived: String(entry.dualReceived || ""),
-      dayLandings: String(entry.dayLandings || ""),
-      nightLandings: String(entry.nightLandings || ""),
-      remarks: entry.remarks,
-    });
-    setShowForm(true);
-  }
-
-  async function remove(entry: LogbookEntry) {
-    if (!confirm(`Delete this logbook entry from ${formatDate(entry.date)}? This cannot be undone.`)) return;
-    setError(null);
-    try {
-      await api.logbook.remove(entry.id);
-      load();
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  }
-
-  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
-
-  const timeField = (label: string, key: keyof typeof emptyLogbookForm) => (
-    <Field label={label}>
-      <input
-        type="number"
-        step="0.1"
-        min="0"
-        className={inputClass}
-        value={form[key] as string}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        placeholder="0.0"
-      />
-    </Field>
-  );
-
-  return (
-    <div>
-      {error && (
-        <div className="mb-4">
-          <Alert tone="error">{error}</Alert>
-        </div>
-      )}
-
-      {totals && (
-        <Card className="p-5 mb-6">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Logged Totals</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
-            {[
-              ["Total", totals.totalTime],
-              ["PIC", totals.picTime],
-              ["Solo", totals.soloTime],
-              ["Cross-Country", totals.crossCountryTime],
-              ["Night", totals.nightTime],
-              ["Instrument", totals.instrumentTime],
-              ["Dual Received", totals.dualReceived],
-            ].map(([label, value]) => (
-              <div key={label as string}>
-                <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">{hours(value as number)}</p>
-              </div>
-            ))}
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Landings (Day/Night)</p>
-              <p className="font-semibold text-slate-800 dark:text-slate-100">
-                {totals.dayLandings} / {totals.nightLandings}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      <div className="mb-4 flex justify-end">
-        <Button
-          onClick={() => {
-            setForm(emptyLogbookForm);
-            setShowForm((s) => !s);
-          }}
-        >
-          Add Logbook Entry
-        </Button>
-      </div>
-
-      {showForm && (
-        <Card className="p-5 mb-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="Date">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  required
-                />
-              </Field>
-              <Field label="Aircraft">
-                <select
-                  className={inputClass}
-                  value={form.aircraftId}
-                  onChange={(e) => setForm({ ...form, aircraftId: e.target.value })}
-                >
-                  <option value="">Select aircraft…</option>
-                  {activeAircraft.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.tailNumber} — {a.makeModel}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Instructor">
-                <select
-                  className={inputClass}
-                  value={form.instructorId}
-                  onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
-                >
-                  <option value="">Solo / none…</option>
-                  {activeInstructors.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {fullName(i)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-
-            <Field label="Route">
-              <input
-                className={inputClass}
-                value={form.route}
-                onChange={(e) => setForm({ ...form, route: e.target.value })}
-                placeholder="e.g. KABC-KXYZ-KABC or Local"
-              />
-            </Field>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {timeField("Total Time", "totalTime")}
-              {timeField("PIC", "picTime")}
-              {timeField("Solo", "soloTime")}
-              {timeField("Cross-Country", "crossCountryTime")}
-              {timeField("Night", "nightTime")}
-              {timeField("Actual Instrument", "actualInstrumentTime")}
-              {timeField("Simulated Instrument", "simulatedInstrumentTime")}
-              {timeField("Dual Received", "dualReceived")}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Day Landings">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  className={inputClass}
-                  value={form.dayLandings}
-                  onChange={(e) => setForm({ ...form, dayLandings: e.target.value })}
-                  placeholder="0"
-                />
-              </Field>
-              <Field label="Night Landings">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  className={inputClass}
-                  value={form.nightLandings}
-                  onChange={(e) => setForm({ ...form, nightLandings: e.target.value })}
-                  placeholder="0"
-                />
-              </Field>
-            </div>
-
-            <Field label="Remarks (optional)">
-              <input
-                className={inputClass}
-                value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                placeholder="e.g. Steep turns, slow flight, stalls"
-              />
-            </Field>
-
-            <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
-                {form.id ? "Save Changes" : "Add Entry"}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowForm(false);
-                  setForm(emptyLogbookForm);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {loading ? (
-        <p className="text-sm text-slate-500">Loading logbook…</p>
-      ) : sorted.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-slate-400">No logbook entries yet.</Card>
-      ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-5 py-2 font-medium">Date</th>
-                  <th className="px-5 py-2 font-medium">Aircraft</th>
-                  <th className="px-5 py-2 font-medium">Instructor</th>
-                  <th className="px-5 py-2 font-medium">Route</th>
-                  <th className="px-5 py-2 font-medium text-right">Total</th>
-                  <th className="px-5 py-2 font-medium text-right">Landings</th>
-                  <th className="px-5 py-2 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {sorted.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="px-5 py-2.5 text-slate-500">{formatDate(entry.date)}</td>
-                    <td className="px-5 py-2.5 text-slate-500">
-                      {entry.aircraftId ? aircraftById.get(entry.aircraftId)?.tailNumber ?? "—" : "—"}
-                    </td>
-                    <td className="px-5 py-2.5 text-slate-500">
-                      {entry.instructorId ? fullName(instructorById.get(entry.instructorId) ?? { firstName: "—", lastName: "" }) : "Solo"}
-                    </td>
-                    <td className="px-5 py-2.5 text-slate-500">{entry.route || "—"}</td>
-                    <td className="px-5 py-2.5 text-right font-medium text-slate-800 dark:text-slate-100">
-                      {hours(entry.totalTime)}
-                    </td>
-                    <td className="px-5 py-2.5 text-right text-slate-500">
-                      {entry.dayLandings + entry.nightLandings > 0 ? `${entry.dayLandings}/${entry.nightLandings}` : "—"}
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          className="p-1.5 rounded-md text-slate-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-slate-800"
-                          onClick={() => startEdit(entry)}
-                          title="Edit"
-                        >
-                          <EditIcon width={16} height={16} />
-                        </button>
-                        <button
-                          className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800"
-                          onClick={() => remove(entry)}
-                          title="Delete"
-                        >
-                          <TrashIcon width={16} height={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
@@ -508,35 +123,6 @@ function RequirementsTab({ clientId }: { clientId: string }) {
           <Alert tone="error">{error}</Alert>
         </div>
       )}
-
-      <Card className="p-5 mb-6">
-        <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Logged Totals</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-          Reference only — compare against the checklist below when deciding whether a requirement is met.
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
-          {[
-            ["Total", data.totals.totalTime],
-            ["PIC", data.totals.picTime],
-            ["Solo", data.totals.soloTime],
-            ["Cross-Country", data.totals.crossCountryTime],
-            ["Night", data.totals.nightTime],
-            ["Instrument", data.totals.instrumentTime],
-            ["Dual Received", data.totals.dualReceived],
-          ].map(([label, value]) => (
-            <div key={label as string}>
-              <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-              <p className="font-semibold text-slate-800 dark:text-slate-100">{hours(value as number)}</p>
-            </div>
-          ))}
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Landings (Day/Night)</p>
-            <p className="font-semibold text-slate-800 dark:text-slate-100">
-              {data.totals.dayLandings} / {data.totals.nightLandings}
-            </p>
-          </div>
-        </div>
-      </Card>
 
       <div className="mb-4 flex gap-1 rounded-lg bg-slate-100 dark:bg-slate-900 p-1 w-fit flex-wrap">
         {data.byCertificate.map((g) => (
@@ -611,7 +197,7 @@ const emptyEndorsementForm = {
   templateId: "",
   title: "",
   farReference: "",
-  instructorId: "",
+  instructorName: "",
   dateGiven: todayISO(),
   notes: "",
 };
@@ -619,7 +205,6 @@ const emptyEndorsementForm = {
 function EndorsementsTab({ clientId }: { clientId: string }) {
   const [endorsements, setEndorsements] = useState<EndorsementRecord[]>([]);
   const [templates, setTemplates] = useState<EndorsementTemplate[]>([]);
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -628,20 +213,16 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
 
   function load() {
     setLoading(true);
-    Promise.all([api.endorsements.list({ clientId }), api.endorsements.templates(), api.instructors.list()])
-      .then(([e, t, i]) => {
+    Promise.all([api.endorsements.list({ clientId }), api.endorsements.templates()])
+      .then(([e, t]) => {
         setEndorsements(e);
         setTemplates(t);
-        setInstructors(i);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }
 
   useEffect(load, [clientId]);
-
-  const instructorById = useMemo(() => new Map(instructors.map((i) => [i.id, i])), [instructors]);
-  const activeInstructors = useMemo(() => instructors.filter((i) => i.active), [instructors]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -653,7 +234,7 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
         templateId: form.templateId || null,
         title: form.templateId ? undefined : form.title,
         farReference: form.templateId ? undefined : form.farReference,
-        instructorId: form.instructorId || null,
+        instructorName: form.instructorName,
         dateGiven: form.dateGiven,
         notes: form.notes,
       });
@@ -704,7 +285,7 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
         <Card className="p-5 mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <Field label="Endorsement">
+              <Field label="Endorsement (FAA Advisory Circular 61-65)">
                 <select
                   className={inputClass}
                   value={form.templateId}
@@ -741,18 +322,12 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
               </>
             )}
             <Field label="Given By">
-              <select
+              <input
                 className={inputClass}
-                value={form.instructorId}
-                onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
-              >
-                <option value="">Select instructor…</option>
-                {activeInstructors.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {fullName(i)}
-                  </option>
-                ))}
-              </select>
+                value={form.instructorName}
+                onChange={(e) => setForm({ ...form, instructorName: e.target.value })}
+                placeholder="Instructor name"
+              />
             </Field>
             <Field label="Date Given">
               <input
@@ -817,9 +392,7 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
                     <tr key={record.id}>
                       <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{record.title}</td>
                       <td className="px-5 py-2.5 font-mono text-xs text-slate-400">{record.farReference || "—"}</td>
-                      <td className="px-5 py-2.5 text-slate-500">
-                        {record.instructorId ? fullName(instructorById.get(record.instructorId) ?? { firstName: "—", lastName: "" }) : "—"}
-                      </td>
+                      <td className="px-5 py-2.5 text-slate-500">{record.instructorName || "—"}</td>
                       <td className="px-5 py-2.5 text-slate-500">{formatDate(record.dateGiven)}</td>
                       <td className="px-5 py-2.5">
                         {record.expiresOn ? (

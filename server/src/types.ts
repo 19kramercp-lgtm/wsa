@@ -96,60 +96,13 @@ export interface RecurringTransaction {
 
 export type CertificateTrack = "private" | "instrument" | "commercial" | "cfi";
 
-export interface Instructor {
-  id: string;
-  firstName: string;
-  lastName: string;
-  certificateNumber: string;
-  ratings: string;
-  certificateExpiration: string | null;
-  phone: string;
-  email: string;
-  active: boolean;
-  createdAt: string;
-}
-
-export interface Aircraft {
-  id: string;
-  tailNumber: string;
-  makeModel: string;
-  category: string;
-  isComplex: boolean;
-  isHighPerformance: boolean;
-  isTailwheel: boolean;
-  active: boolean;
-  createdAt: string;
-}
-
-export interface LogbookEntry {
-  id: string;
-  clientId: string;
-  date: string;
-  aircraftId: string | null;
-  instructorId: string | null;
-  route: string;
-  totalTime: number;
-  picTime: number;
-  soloTime: number;
-  crossCountryTime: number;
-  nightTime: number;
-  actualInstrumentTime: number;
-  simulatedInstrumentTime: number;
-  dualReceived: number;
-  dayLandings: number;
-  nightLandings: number;
-  remarks: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface EndorsementRecord {
   id: string;
   clientId: string;
   templateId: string | null;
   title: string;
   farReference: string;
-  instructorId: string | null;
+  instructorName: string;
   dateGiven: string;
   expiresOn: string | null;
   notes: string;
@@ -174,9 +127,6 @@ export interface Database {
   clients: Client[];
   vendors: Vendor[];
   recurringTransactions: RecurringTransaction[];
-  instructors: Instructor[];
-  aircraft: Aircraft[];
-  logbookEntries: LogbookEntry[];
   endorsements: EndorsementRecord[];
   requirementChecks: RequirementCheck[];
   meta: {

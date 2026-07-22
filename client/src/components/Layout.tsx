@@ -8,7 +8,6 @@ import {
   ExpenseIcon,
   GraduationCapIcon,
   HomeIcon,
-  IdBadgeIcon,
   JournalIcon,
   LedgerIcon,
   MenuIcon,
@@ -37,10 +36,7 @@ const ACCOUNTING_NAV_ITEMS = [
 
 const TRAINING_NAV_ITEMS = [
   { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
-  { to: "/training/logbook", label: "Logbook", icon: JournalIcon },
   { to: "/training/endorsements", label: "Endorsements", icon: AwardIcon },
-  { to: "/training/instructors", label: "Instructors", icon: IdBadgeIcon },
-  { to: "/training/aircraft", label: "Aircraft", icon: PlaneIcon },
 ];
 
 export default function Layout() {
