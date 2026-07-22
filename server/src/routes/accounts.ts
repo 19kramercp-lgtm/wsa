@@ -73,9 +73,6 @@ router.delete("/:id", async (req, res) => {
       error: "This account has transactions posted against it and cannot be deleted. Deactivate it instead.",
     });
   }
-  if (account.isSystem) {
-    return res.status(409).json({ error: "System accounts cannot be deleted. Deactivate it instead." });
-  }
 
   db.accounts = db.accounts.filter((a) => a.id !== account.id);
   await writeDatabase(db);

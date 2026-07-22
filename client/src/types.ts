@@ -247,9 +247,12 @@ export interface EndorsementTemplate {
   expirationDays?: number;
 }
 
+export type Far61Category = "knowledge" | "experience";
+
 export interface Far61Requirement {
   id: string;
   certificate: CertificateTrack;
+  category: Far61Category;
   reg: string;
   text: string;
   targetHours?: number;

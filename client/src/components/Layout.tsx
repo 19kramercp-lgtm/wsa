@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  AwardIcon,
   BookIcon,
   BuildingIcon,
   CloseIcon,
@@ -34,10 +33,7 @@ const ACCOUNTING_NAV_ITEMS = [
   { to: "/reports", label: "Reports", icon: ReportsIcon },
 ];
 
-const TRAINING_NAV_ITEMS = [
-  { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
-  { to: "/training/endorsements", label: "Endorsements", icon: AwardIcon },
-];
+const TRAINING_NAV_ITEMS = [{ to: "/training/students", label: "Students", icon: UsersIcon, end: true }];
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);

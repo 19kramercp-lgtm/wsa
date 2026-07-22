@@ -316,15 +316,13 @@ export default function ChartOfAccounts() {
                                 >
                                   {a.active ? "Deactivate" : "Activate"}
                                 </button>
-                                {!a.isSystem && (
-                                  <button
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800"
-                                    onClick={() => remove(a)}
-                                    title="Delete"
-                                  >
-                                    <TrashIcon width={16} height={16} />
-                                  </button>
-                                )}
+                                <button
+                                  className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800"
+                                  onClick={() => remove(a)}
+                                  title="Delete"
+                                >
+                                  <TrashIcon width={16} height={16} />
+                                </button>
                               </div>
                             </td>
                           </tr>

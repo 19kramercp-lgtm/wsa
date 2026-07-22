@@ -115,6 +115,46 @@ function RequirementsTab({ clientId }: { clientId: string }) {
 
   const group = data.byCertificate.find((g) => g.certificate === certificate)!;
   const metCount = group.requirements.filter((r) => r.met).length;
+  const knowledgeReqs = group.requirements.filter((r) => r.category === "knowledge");
+  const experienceReqs = group.requirements.filter((r) => r.category === "experience");
+
+  const renderRow = (r: (typeof group.requirements)[number]) => (
+    <div key={r.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-start gap-3">
+      <label className="flex items-start gap-3 flex-1 cursor-pointer">
+        <input
+          type="checkbox"
+          className="mt-1 rounded border-slate-300 dark:border-slate-700"
+          checked={r.met}
+          onChange={(e) => updateCheck(r.id, { met: e.target.checked, dateMet: e.target.checked ? todayISO() : null })}
+        />
+        <span>
+          <span className="block text-xs font-mono text-slate-400">{r.reg}</span>
+          <span className="block text-sm text-slate-700 dark:text-slate-200">{r.text}</span>
+          {(r.targetHours || r.targetCount) && (
+            <span className="block text-xs text-slate-400 mt-0.5">
+              Target: {r.targetHours ? `${r.targetHours} hrs` : ""}
+              {r.targetHours && r.targetCount ? " · " : ""}
+              {r.targetCount ? `${r.targetCount} event${r.targetCount > 1 ? "s" : ""}` : ""}
+            </span>
+          )}
+        </span>
+      </label>
+      <div className="flex gap-2 sm:w-80 shrink-0">
+        <input
+          type="date"
+          className={`${inputClass} !py-1.5 text-xs`}
+          value={r.dateMet ?? ""}
+          onChange={(e) => updateCheck(r.id, { dateMet: e.target.value || null })}
+        />
+        <input
+          className={`${inputClass} !py-1.5 text-xs`}
+          value={r.note}
+          onChange={(e) => updateCheck(r.id, { note: e.target.value })}
+          placeholder="Note (optional)"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -147,47 +187,16 @@ function RequirementsTab({ clientId }: { clientId: string }) {
             {metCount} / {group.requirements.length} met
           </Badge>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {group.requirements.map((r) => (
-            <div key={r.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-start gap-3">
-              <label className="flex items-start gap-3 flex-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 rounded border-slate-300 dark:border-slate-700"
-                  checked={r.met}
-                  onChange={(e) =>
-                    updateCheck(r.id, { met: e.target.checked, dateMet: e.target.checked ? todayISO() : null })
-                  }
-                />
-                <span>
-                  <span className="block text-xs font-mono text-slate-400">{r.reg}</span>
-                  <span className="block text-sm text-slate-700 dark:text-slate-200">{r.text}</span>
-                  {(r.targetHours || r.targetCount) && (
-                    <span className="block text-xs text-slate-400 mt-0.5">
-                      Target: {r.targetHours ? `${r.targetHours} hrs` : ""}
-                      {r.targetHours && r.targetCount ? " · " : ""}
-                      {r.targetCount ? `${r.targetCount} event${r.targetCount > 1 ? "s" : ""}` : ""}
-                    </span>
-                  )}
-                </span>
-              </label>
-              <div className="flex gap-2 sm:w-80 shrink-0">
-                <input
-                  type="date"
-                  className={`${inputClass} !py-1.5 text-xs`}
-                  value={r.dateMet ?? ""}
-                  onChange={(e) => updateCheck(r.id, { dateMet: e.target.value || null })}
-                />
-                <input
-                  className={`${inputClass} !py-1.5 text-xs`}
-                  value={r.note}
-                  onChange={(e) => updateCheck(r.id, { note: e.target.value })}
-                  placeholder="Note (optional)"
-                />
-              </div>
-            </div>
-          ))}
+
+        <div className="px-5 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Aeronautical Knowledge (Ground)</p>
         </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">{knowledgeReqs.map(renderRow)}</div>
+
+        <div className="px-5 py-2 bg-slate-50 dark:bg-slate-800/60 border-y border-slate-100 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Aeronautical Experience (Flight)</p>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">{experienceReqs.map(renderRow)}</div>
       </Card>
     </div>
   );

@@ -12,7 +12,6 @@ import Recurring from "./pages/Recurring";
 import Reports from "./pages/Reports";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
-import EndorsementsPage from "./pages/EndorsementsPage";
 
 function App() {
   return (
@@ -31,7 +30,6 @@ function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="training/students" element={<Students />} />
           <Route path="training/students/:clientId" element={<StudentProfile />} />
-          <Route path="training/endorsements" element={<EndorsementsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

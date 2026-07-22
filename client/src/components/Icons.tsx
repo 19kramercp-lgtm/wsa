@@ -148,13 +148,6 @@ export const GraduationCapIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export const AwardIcon = (props: SVGProps<SVGSVGElement>) => (
-  <svg {...base(props)}>
-    <circle cx="12" cy="8" r="6" />
-    <path d="m9 13.5-2 7.5 5-2.5 5 2.5-2-7.5" />
-  </svg>
-);
-
 export const RepeatIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg {...base(props)}>
     <polyline points="17,1 21,5 17,9" />
