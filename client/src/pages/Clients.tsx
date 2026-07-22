@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { EditIcon, PlusIcon, TrashIcon } from "../components/Icons";
-import { clientAddress, formatDate, fullName } from "../utils/format";
+import { clientAddress, formatDate, formatPhoneNumber, fullName } from "../utils/format";
 import type { Client } from "../types";
 
 interface ClientFormState {
@@ -52,10 +52,11 @@ export default function Clients() {
     setError(null);
     setSaving(true);
     try {
+      const payload = { ...form, phone: formatPhoneNumber(form.phone) };
       if (form.id) {
-        await api.clients.update(form.id, form);
+        await api.clients.update(form.id, payload);
       } else {
-        await api.clients.create(form);
+        await api.clients.create(payload);
       }
       setForm(emptyClientForm);
       setShowForm(false);
@@ -145,7 +146,8 @@ export default function Clients() {
                   className={inputClass}
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="e.g. (555) 123-4567"
+                  onBlur={(e) => setForm((f) => ({ ...f, phone: formatPhoneNumber(e.target.value) }))}
+                  placeholder="+1 (234) 567-8900"
                 />
               </Field>
               <Field label="Email Address">

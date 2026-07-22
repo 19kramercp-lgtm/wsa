@@ -2,6 +2,18 @@ import { Router } from "express";
 import { readDatabase } from "../db.js";
 import type { Account, JournalEntry } from "../types.js";
 
+function isReceivableAccount(account: Account): boolean {
+  return account.type === "asset" && /receivable/i.test(account.name);
+}
+
+function daysBetween(earlier: string, later: string): number {
+  const [ay, am, ad] = earlier.split("-").map(Number);
+  const [by, bm, bd] = later.split("-").map(Number);
+  const a = Date.UTC(ay, am - 1, ad);
+  const b = Date.UTC(by, bm - 1, bd);
+  return Math.round((b - a) / 86400000);
+}
+
 const router = Router();
 
 function round2(n: number): number {
@@ -200,6 +212,95 @@ router.get("/cash-flow", async (req, res) => {
     endingCash,
     reconciled: round2(beginningCash + netChangeInCash) === endingCash,
   });
+});
+
+// Aged receivables: how much each client currently owes, bucketed by how
+// long each unpaid charge has been outstanding. Charges are journal entries
+// that debit an Accounts Receivable-type account and are tagged with a
+// client; payments (credits to that account) are applied FIFO against the
+// client's oldest outstanding charges first.
+router.get("/aged-receivables", async (req, res) => {
+  const db = await readDatabase();
+  const { asOf } = req.query;
+  const asOfStr = asOf ? String(asOf) : new Date().toISOString().slice(0, 10);
+
+  const arAccountIds = new Set(db.accounts.filter(isReceivableAccount).map((a) => a.id));
+
+  const entries = db.journalEntries
+    .filter((e) => e.date <= asOfStr && e.clientId && e.lines.some((l) => arAccountIds.has(l.accountId)))
+    .sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date.localeCompare(b.date)));
+
+  interface Charge {
+    date: string;
+    remaining: number;
+  }
+
+  const chargesByClient = new Map<string, Charge[]>();
+
+  for (const entry of entries) {
+    const arDelta = round2(
+      entry.lines.reduce((sum, l) => (arAccountIds.has(l.accountId) ? sum + l.debit - l.credit : sum), 0)
+    );
+    if (arDelta === 0) continue;
+    const clientId = entry.clientId as string;
+    const charges = chargesByClient.get(clientId) ?? [];
+    chargesByClient.set(clientId, charges);
+
+    if (arDelta > 0) {
+      charges.push({ date: entry.date, remaining: arDelta });
+    } else {
+      let paymentRemaining = -arDelta;
+      for (const charge of charges) {
+        if (paymentRemaining <= 0) break;
+        if (charge.remaining <= 0) continue;
+        const applied = Math.min(charge.remaining, paymentRemaining);
+        charge.remaining = round2(charge.remaining - applied);
+        paymentRemaining = round2(paymentRemaining - applied);
+      }
+      if (paymentRemaining > 0) {
+        // Payment exceeds all known charges (credit balance) — keep as a
+        // negative charge dated today so it still nets out correctly.
+        charges.push({ date: entry.date, remaining: -paymentRemaining });
+      }
+    }
+  }
+
+  const rows = [];
+  for (const [clientId, charges] of chargesByClient) {
+    const client = db.clients.find((c) => c.id === clientId);
+    if (!client) continue;
+    let current = 0;
+    let days31to60 = 0;
+    let days61to90 = 0;
+    let over90 = 0;
+    for (const charge of charges) {
+      if (charge.remaining === 0) continue;
+      const age = daysBetween(charge.date, asOfStr);
+      if (age <= 30) current += charge.remaining;
+      else if (age <= 60) days31to60 += charge.remaining;
+      else if (age <= 90) days61to90 += charge.remaining;
+      else over90 += charge.remaining;
+    }
+    current = round2(current);
+    days31to60 = round2(days31to60);
+    days61to90 = round2(days61to90);
+    over90 = round2(over90);
+    const total = round2(current + days31to60 + days61to90 + over90);
+    if (total === 0) continue;
+    rows.push({ client, current, days31to60, days61to90, over90, total });
+  }
+
+  rows.sort((a, b) => b.total - a.total);
+
+  const totals = {
+    current: round2(rows.reduce((sum, r) => sum + r.current, 0)),
+    days31to60: round2(rows.reduce((sum, r) => sum + r.days31to60, 0)),
+    days61to90: round2(rows.reduce((sum, r) => sum + r.days61to90, 0)),
+    over90: round2(rows.reduce((sum, r) => sum + r.over90, 0)),
+    total: round2(rows.reduce((sum, r) => sum + r.total, 0)),
+  };
+
+  res.json({ asOf: asOfStr, rows, totals });
 });
 
 export default router;

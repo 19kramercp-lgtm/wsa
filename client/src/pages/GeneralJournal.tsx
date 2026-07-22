@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { PlusIcon, TrashIcon } from "../components/Icons";
-import { formatCurrency, formatDate, todayISO } from "../utils/format";
+import { formatCurrency, formatDate, fullName, todayISO } from "../utils/format";
 import { isDateInClosedPeriod, periodLabel } from "../utils/period";
 import { useClosedPeriods } from "../utils/useClosedPeriods";
+import { useClients } from "../utils/useClients";
 import type { Account, JournalEntry, JournalLine } from "../types";
 
 interface DraftLine {
@@ -24,12 +25,16 @@ export default function GeneralJournal() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const closedPeriods = useClosedPeriods();
+  const { clients } = useClients();
 
   const [date, setDate] = useState(todayISO());
   const [memo, setMemo] = useState("");
+  const [clientId, setClientId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([emptyLine(), emptyLine()]);
 
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const sortedClients = useMemo(() => [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b))), [clients]);
 
   function load() {
     setLoading(true);
@@ -55,6 +60,7 @@ export default function GeneralJournal() {
   function resetForm() {
     setDate(todayISO());
     setMemo("");
+    setClientId("");
     setLines([emptyLine(), emptyLine()]);
   }
 
@@ -83,7 +89,13 @@ export default function GeneralJournal() {
     }
     setSaving(true);
     try {
-      await api.journal.create({ date, memo, lines: payloadLines as JournalLine[], source: "manual" });
+      await api.journal.create({
+        date,
+        memo,
+        lines: payloadLines as JournalLine[],
+        source: "manual",
+        clientId: clientId || null,
+      });
       resetForm();
       setShowForm(false);
       load();
@@ -140,6 +152,16 @@ export default function GeneralJournal() {
                   onChange={(e) => setMemo(e.target.value)}
                   placeholder="Description of this entry"
                 />
+              </Field>
+              <Field label="Client (optional)" hint="Tag a client, e.g. to record a payment against their balance">
+                <select className={inputClass} value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                  <option value="">No client</option>
+                  {sortedClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {fullName(c)}
+                    </option>
+                  ))}
+                </select>
               </Field>
             </div>
 
@@ -280,6 +302,9 @@ export default function GeneralJournal() {
                   <Badge tone={entry.source === "revenue" ? "green" : entry.source === "expense" ? "red" : "blue"}>
                     {entry.source}
                   </Badge>
+                  {entry.clientId && clientById.get(entry.clientId) && (
+                    <Badge tone="slate">{fullName(clientById.get(entry.clientId)!)}</Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-400">{formatDate(entry.date)}</span>

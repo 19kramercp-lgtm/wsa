@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Badge, Button, Card, PageHeader } from "../components/ui";
-import { formatCurrency } from "../utils/format";
+import { formatCurrency, fullName } from "../utils/format";
 import { currentPeriod, monthBounds, periodLabel, shiftPeriod } from "../utils/period";
 import type {
+  AgedReceivablesResponse,
   BalanceSheetResponse,
   CashFlowResponse,
   ClosedPeriod,
@@ -11,13 +12,14 @@ import type {
   TrialBalanceResponse,
 } from "../types";
 
-type Tab = "trial-balance" | "income-statement" | "balance-sheet" | "cash-flow";
+type Tab = "trial-balance" | "income-statement" | "balance-sheet" | "cash-flow" | "aged-receivables";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "trial-balance", label: "Trial Balance" },
   { id: "income-statement", label: "Income Statement" },
   { id: "balance-sheet", label: "Balance Sheet" },
   { id: "cash-flow", label: "Cash Flow" },
+  { id: "aged-receivables", label: "Aged Receivables" },
 ];
 
 export default function Reports() {
@@ -70,6 +72,7 @@ export default function Reports() {
       {tab === "income-statement" && <IncomeStatementTab start={start} end={end} />}
       {tab === "balance-sheet" && <BalanceSheetTab asOf={end} />}
       {tab === "cash-flow" && <CashFlowTab start={start} end={end} />}
+      {tab === "aged-receivables" && <AgedReceivablesTab asOf={end} />}
     </div>
   );
 }
@@ -450,6 +453,80 @@ function CashFlowTab({ start, end }: { start: string; end: string }) {
           <span>{formatCurrency(data.endingCash)}</span>
         </div>
       </div>
+    </Card>
+  );
+}
+
+function AgedReceivablesTab({ asOf }: { asOf: string }) {
+  const [data, setData] = useState<AgedReceivablesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.reports.agedReceivables(asOf).then(setData).finally(() => setLoading(false));
+  }, [asOf]);
+
+  if (loading || !data) return <p className="text-sm text-slate-500">Loading…</p>;
+
+  return (
+    <Card>
+      <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100">Aged Receivables</h2>
+        <span className="text-xs text-slate-400">as of {asOf}</span>
+      </div>
+      {data.rows.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-slate-400">
+          No outstanding balances. Amounts owed appear here once a revenue entry is deposited to Accounts Receivable
+          for a client.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-5 py-2 font-medium">Client</th>
+                <th className="px-5 py-2 font-medium text-right">Current (0-30)</th>
+                <th className="px-5 py-2 font-medium text-right">31-60 Days</th>
+                <th className="px-5 py-2 font-medium text-right">61-90 Days</th>
+                <th className="px-5 py-2 font-medium text-right">91+ Days</th>
+                <th className="px-5 py-2 font-medium text-right">Total Owed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.rows.map((r) => (
+                <tr key={r.client.id}>
+                  <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{fullName(r.client)}</td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.current !== 0 ? formatCurrency(r.current) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.days31to60 !== 0 ? formatCurrency(r.days31to60) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.days61to90 !== 0 ? formatCurrency(r.days61to90) : ""}
+                  </td>
+                  <td className={`px-5 py-2.5 text-right ${r.over90 > 0 ? "text-red-600 font-medium" : "text-slate-700 dark:text-slate-200"}`}>
+                    {r.over90 !== 0 ? formatCurrency(r.over90) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right font-semibold text-slate-800 dark:text-slate-100">
+                    {formatCurrency(r.total)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-100">
+                <td className="px-5 py-2.5">Total</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.current)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.days31to60)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.days61to90)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.over90)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </Card>
   );
 }

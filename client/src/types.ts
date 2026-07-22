@@ -132,3 +132,24 @@ export interface Client {
   zip: string;
   createdAt: string;
 }
+
+export interface AgedReceivableRow {
+  client: Client;
+  current: number;
+  days31to60: number;
+  days61to90: number;
+  over90: number;
+  total: number;
+}
+
+export interface AgedReceivablesResponse {
+  asOf: string;
+  rows: AgedReceivableRow[];
+  totals: {
+    current: number;
+    days31to60: number;
+    days61to90: number;
+    over90: number;
+    total: number;
+  };
+}

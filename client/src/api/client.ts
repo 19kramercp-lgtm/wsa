@@ -1,5 +1,6 @@
 import type {
   Account,
+  AgedReceivablesResponse,
   BalanceSheetResponse,
   CashFlowResponse,
   Client,
@@ -90,6 +91,8 @@ export const api = {
       const qs = new URLSearchParams({ ...(start ? { start } : {}), ...(end ? { end } : {}) }).toString();
       return request<CashFlowResponse>(`/reports/cash-flow${qs ? `?${qs}` : ""}`);
     },
+    agedReceivables: (asOf?: string) =>
+      request<AgedReceivablesResponse>(`/reports/aged-receivables${asOf ? `?asOf=${asOf}` : ""}`),
   },
   periods: {
     list: () => request<ClosedPeriod[]>("/periods"),

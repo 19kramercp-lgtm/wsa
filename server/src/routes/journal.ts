@@ -58,7 +58,7 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { date, memo, reference, lines: rawLines, source } = req.body ?? {};
+  const { date, memo, reference, lines: rawLines, source, clientId } = req.body ?? {};
   if (!date) return res.status(400).json({ error: "date is required" });
 
   const result = validateLines(rawLines);
@@ -74,6 +74,9 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: `Unknown accountId ${line.accountId}` });
     }
   }
+  if (clientId && !db.clients.some((c) => c.id === clientId)) {
+    return res.status(400).json({ error: "clientId must reference a valid client" });
+  }
 
   const now = new Date().toISOString();
   const entry: JournalEntry = {
@@ -82,7 +85,7 @@ router.post("/", async (req, res) => {
     memo: memo ?? "",
     reference: reference ?? String(db.meta.nextJournalNumber).padStart(5, "0"),
     source: source ?? "manual",
-    clientId: null,
+    clientId: clientId ?? null,
     lines: result.lines,
     createdAt: now,
     updatedAt: now,
@@ -102,7 +105,7 @@ router.put("/:id", async (req, res) => {
     return res.status(409).json(closedPeriodError(entry.date));
   }
 
-  const { date, memo, reference, lines: rawLines } = req.body ?? {};
+  const { date, memo, reference, lines: rawLines, clientId } = req.body ?? {};
   if (date !== undefined && isPeriodClosed(String(date), db.closedPeriods)) {
     return res.status(409).json(closedPeriodError(String(date)));
   }
@@ -116,6 +119,12 @@ router.put("/:id", async (req, res) => {
       }
     }
     entry.lines = result.lines;
+  }
+  if (clientId !== undefined) {
+    if (clientId && !db.clients.some((c) => c.id === clientId)) {
+      return res.status(400).json({ error: "clientId must reference a valid client" });
+    }
+    entry.clientId = clientId || null;
   }
   if (date !== undefined) entry.date = String(date);
   if (memo !== undefined) entry.memo = String(memo);
