@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { EditIcon, PlusIcon, TrashIcon } from "../components/Icons";
-import { clientAddress, formatDate, formatPhoneNumber, fullName } from "../utils/format";
+import { clientAddress, formatPhoneNumber, fullName } from "../utils/format";
 import type { Client } from "../types";
 
 interface ClientFormState {
@@ -229,7 +229,6 @@ export default function Clients() {
                   <th className="px-5 py-2 font-medium">Phone</th>
                   <th className="px-5 py-2 font-medium">Email</th>
                   <th className="px-5 py-2 font-medium hidden md:table-cell">Address</th>
-                  <th className="px-5 py-2 font-medium hidden lg:table-cell">Added</th>
                   <th className="px-5 py-2 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -240,7 +239,6 @@ export default function Clients() {
                     <td className="px-5 py-2.5 text-slate-500">{c.phone || "—"}</td>
                     <td className="px-5 py-2.5 text-slate-500">{c.email || "—"}</td>
                     <td className="px-5 py-2.5 text-slate-500 hidden md:table-cell">{clientAddress(c) || "—"}</td>
-                    <td className="px-5 py-2.5 text-slate-500 hidden lg:table-cell">{formatDate(c.createdAt.slice(0, 10))}</td>
                     <td className="px-5 py-2.5">
                       <div className="flex justify-end gap-1">
                         <button
