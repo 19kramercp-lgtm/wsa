@@ -10,6 +10,12 @@ import Revenues from "./pages/Revenues";
 import Expenses from "./pages/Expenses";
 import Recurring from "./pages/Recurring";
 import Reports from "./pages/Reports";
+import Students from "./pages/Students";
+import StudentProfile from "./pages/StudentProfile";
+import Logbook from "./pages/Logbook";
+import EndorsementsPage from "./pages/EndorsementsPage";
+import Instructors from "./pages/Instructors";
+import AircraftPage from "./pages/Aircraft";
 
 function App() {
   return (
@@ -26,6 +32,12 @@ function App() {
           <Route path="expenses" element={<Expenses />} />
           <Route path="recurring" element={<Recurring />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="training/students" element={<Students />} />
+          <Route path="training/students/:clientId" element={<StudentProfile />} />
+          <Route path="training/logbook" element={<Logbook />} />
+          <Route path="training/endorsements" element={<EndorsementsPage />} />
+          <Route path="training/instructors" element={<Instructors />} />
+          <Route path="training/aircraft" element={<AircraftPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

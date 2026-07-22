@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
+  AwardIcon,
   BookIcon,
   BuildingIcon,
   CloseIcon,
   ExpenseIcon,
+  GraduationCapIcon,
   HomeIcon,
+  IdBadgeIcon,
   JournalIcon,
   LedgerIcon,
   MenuIcon,
@@ -16,7 +19,10 @@ import {
   UsersIcon,
 } from "./Icons";
 
-const NAV_ITEMS = [
+type Mode = "accounting" | "training";
+const MODE_STORAGE_KEY = "wsa-mode";
+
+const ACCOUNTING_NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookIcon },
   { to: "/clients", label: "Clients", icon: UsersIcon },
@@ -29,8 +35,41 @@ const NAV_ITEMS = [
   { to: "/reports", label: "Reports", icon: ReportsIcon },
 ];
 
+const TRAINING_NAV_ITEMS = [
+  { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
+  { to: "/training/logbook", label: "Logbook", icon: JournalIcon },
+  { to: "/training/endorsements", label: "Endorsements", icon: AwardIcon },
+  { to: "/training/instructors", label: "Instructors", icon: IdBadgeIcon },
+  { to: "/training/aircraft", label: "Aircraft", icon: PlaneIcon },
+];
+
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<Mode>(() =>
+    typeof window !== "undefined" && window.localStorage.getItem(MODE_STORAGE_KEY) === "training"
+      ? "training"
+      : "accounting"
+  );
+
+  useEffect(() => {
+    const shouldBeTraining = location.pathname.startsWith("/training");
+    setMode((current) => {
+      const next: Mode = shouldBeTraining ? "training" : "accounting";
+      return current === next ? current : next;
+    });
+  }, [location.pathname]);
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    window.localStorage.setItem(MODE_STORAGE_KEY, next);
+    navigate(next === "training" ? "/training/students" : "/");
+    setMenuOpen(false);
+  }
+
+  const navItems = mode === "training" ? TRAINING_NAV_ITEMS : ACCOUNTING_NAV_ITEMS;
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
@@ -56,7 +95,7 @@ export default function Layout() {
             </span>
             <div className="leading-tight">
               <p className="font-semibold text-sm text-white">Wingspan Aviation</p>
-              <p className="text-xs text-slate-400">Accounting</p>
+              <p className="text-xs text-slate-400">{mode === "training" ? "Training" : "Accounting"}</p>
             </div>
           </div>
           <button
@@ -68,8 +107,29 @@ export default function Layout() {
           </button>
         </div>
 
+        <div className="px-3 pt-3">
+          <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
+            <button
+              onClick={() => switchMode("accounting")}
+              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                mode === "accounting" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <ReportsIcon width={14} height={14} /> Accounting
+            </button>
+            <button
+              onClick={() => switchMode("training")}
+              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                mode === "training" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <GraduationCapIcon width={14} height={14} /> Training
+            </button>
+          </div>
+        </div>
+
         <nav className="px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+          {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

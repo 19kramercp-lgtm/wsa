@@ -140,6 +140,37 @@ export const BuildingIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const GraduationCapIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <path d="m2 9 10-5 10 5-10 5-10-5Z" />
+    <path d="M6 11.5V17c0 1.1 2.7 3 6 3s6-1.9 6-3v-5.5" />
+    <path d="M22 9v6" />
+  </svg>
+);
+
+export const AwardIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="8" r="6" />
+    <path d="m9 13.5-2 7.5 5-2.5 5 2.5-2-7.5" />
+  </svg>
+);
+
+export const CheckSquareIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <polyline points="8,12 11,15 17,9" />
+  </svg>
+);
+
+export const IdBadgeIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <rect x="5" y="3" width="14" height="18" rx="2" />
+    <circle cx="12" cy="10" r="2.5" />
+    <path d="M8 17c0-1.7 1.8-3 4-3s4 1.3 4 3" />
+    <line x1="9" y1="7" x2="9" y2="7" />
+  </svg>
+);
+
 export const RepeatIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg {...base(props)}>
     <polyline points="17,1 21,5 17,9" />

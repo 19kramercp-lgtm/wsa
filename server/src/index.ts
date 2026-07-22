@@ -11,6 +11,11 @@ import periodsRouter from "./routes/periods.js";
 import clientsRouter from "./routes/clients.js";
 import vendorsRouter from "./routes/vendors.js";
 import recurringRouter from "./routes/recurring.js";
+import instructorsRouter from "./routes/instructors.js";
+import aircraftRouter from "./routes/aircraft.js";
+import logbookRouter from "./routes/logbook.js";
+import endorsementsRouter from "./routes/endorsements.js";
+import requirementsRouter from "./routes/requirements.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -28,6 +33,11 @@ app.use("/api/periods", periodsRouter);
 app.use("/api/clients", clientsRouter);
 app.use("/api/vendors", vendorsRouter);
 app.use("/api/recurring", recurringRouter);
+app.use("/api/instructors", instructorsRouter);
+app.use("/api/aircraft", aircraftRouter);
+app.use("/api/logbook", logbookRouter);
+app.use("/api/endorsements", endorsementsRouter);
+app.use("/api/requirements", requirementsRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", company: "Wingspan Aviation" });
