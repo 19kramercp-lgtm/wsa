@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Account, CashFlowCategory, ClosedPeriod, Database } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "..", "data");
+const DATA_DIR = process.env.DATA_DIR ? process.env.DATA_DIR : path.join(__dirname, "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "wingspan-ledger.json");
 
 function seedAccounts(): Account[] {
