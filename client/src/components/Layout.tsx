@@ -37,7 +37,7 @@ export default function Layout() {
       {/* Mobile overlay */}
       {menuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden print:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
         />
@@ -45,7 +45,7 @@ export default function Layout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed z-40 inset-y-0 left-0 w-72 shrink-0 transform bg-slate-900 text-slate-100 transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+        className={`fixed z-40 inset-y-0 left-0 w-72 shrink-0 transform bg-slate-900 text-slate-100 transition-transform duration-200 ease-out lg:static lg:translate-x-0 print:hidden ${
           menuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -96,7 +96,7 @@ export default function Layout() {
 
       {/* Main column */}
       <div className="flex-1 min-w-0 lg:pl-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 h-16 px-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur">
+        <header className="sticky top-0 z-20 flex items-center gap-3 h-16 px-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur print:hidden">
           <button
             className="lg:hidden -ml-1 p-2 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setMenuOpen(true)}
@@ -112,7 +112,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+        <main className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto print:p-0 print:max-w-none">
           <Outlet />
         </main>
       </div>

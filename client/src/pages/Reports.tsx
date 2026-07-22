@@ -4,6 +4,7 @@ import { Alert, Badge, Button, Card, PageHeader } from "../components/ui";
 import { formatCurrency, fullName } from "../utils/format";
 import { currentPeriod, monthBounds, periodLabel, shiftPeriod } from "../utils/period";
 import type {
+  AgedPayablesResponse,
   AgedReceivablesResponse,
   BalanceSheetResponse,
   CashFlowResponse,
@@ -13,7 +14,14 @@ import type {
   TrialBalanceResponse,
 } from "../types";
 
-type Tab = "trial-balance" | "income-statement" | "balance-sheet" | "cash-flow" | "aged-receivables" | "revenue-by-client";
+type Tab =
+  | "trial-balance"
+  | "income-statement"
+  | "balance-sheet"
+  | "cash-flow"
+  | "aged-receivables"
+  | "aged-payables"
+  | "revenue-by-client";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "trial-balance", label: "Trial Balance" },
@@ -21,14 +29,37 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "balance-sheet", label: "Balance Sheet" },
   { id: "cash-flow", label: "Cash Flow" },
   { id: "aged-receivables", label: "Aged Receivables" },
+  { id: "aged-payables", label: "Aged Payables" },
   { id: "revenue-by-client", label: "Revenue by Client" },
 ];
+
+function renderReportTab(id: Tab, start: string, end: string) {
+  switch (id) {
+    case "trial-balance":
+      return <TrialBalanceTab asOf={end} />;
+    case "income-statement":
+      return <IncomeStatementTab start={start} end={end} />;
+    case "balance-sheet":
+      return <BalanceSheetTab asOf={end} />;
+    case "cash-flow":
+      return <CashFlowTab start={start} end={end} />;
+    case "aged-receivables":
+      return <AgedReceivablesTab asOf={end} />;
+    case "aged-payables":
+      return <AgedPayablesTab asOf={end} />;
+    case "revenue-by-client":
+      return <RevenueByClientTab start={start} end={end} />;
+  }
+}
 
 export default function Reports() {
   const [tab, setTab] = useState<Tab>("trial-balance");
   const [period, setPeriod] = useState(currentPeriod());
   const [closedPeriods, setClosedPeriods] = useState<ClosedPeriod[]>([]);
   const [loadingPeriods, setLoadingPeriods] = useState(true);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printChecks, setPrintChecks] = useState<Set<Tab>>(new Set());
+  const [printing, setPrinting] = useState<Tab[] | null>(null);
 
   function loadClosedPeriods() {
     setLoadingPeriods(true);
@@ -40,42 +71,124 @@ export default function Reports() {
 
   useEffect(loadClosedPeriods, []);
 
+  useEffect(() => {
+    if (!printing) return;
+    const timer = setTimeout(() => window.print(), 500);
+    const handleAfterPrint = () => setPrinting(null);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [printing]);
+
   const { start, end } = monthBounds(period);
+
+  function toggleCheck(id: Tab) {
+    setPrintChecks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function openPrintMenu() {
+    setPrintChecks(new Set([tab]));
+    setPrintOpen(true);
+  }
 
   return (
     <div>
-      <PageHeader title="Reports" subtitle="Trial balance, income statement, balance sheet, and cash flow — by period" />
+      <div className="print:hidden">
+        <PageHeader
+          title="Reports"
+          subtitle="Trial balance, income statement, balance sheet, and cash flow — by period"
+          actions={
+            <Button variant="secondary" onClick={openPrintMenu}>
+              Print Reports
+            </Button>
+          }
+        />
 
-      <PeriodBar
-        period={period}
-        setPeriod={setPeriod}
-        closedPeriods={closedPeriods}
-        loading={loadingPeriods}
-        onChange={loadClosedPeriods}
-      />
+        <PeriodBar
+          period={period}
+          setPeriod={setPeriod}
+          closedPeriods={closedPeriods}
+          loading={loadingPeriods}
+          onChange={loadClosedPeriods}
+        />
 
-      <div className="mb-6 flex gap-1 rounded-lg bg-slate-100 dark:bg-slate-900 p-1 w-fit flex-wrap">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              tab === t.id
-                ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+        <div className="mb-6 flex gap-1 rounded-lg bg-slate-100 dark:bg-slate-900 p-1 w-fit flex-wrap">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                tab === t.id
+                  ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {renderReportTab(tab, start, end)}
       </div>
 
-      {tab === "trial-balance" && <TrialBalanceTab asOf={end} />}
-      {tab === "income-statement" && <IncomeStatementTab start={start} end={end} />}
-      {tab === "balance-sheet" && <BalanceSheetTab asOf={end} />}
-      {tab === "cash-flow" && <CashFlowTab start={start} end={end} />}
-      {tab === "aged-receivables" && <AgedReceivablesTab asOf={end} />}
-      {tab === "revenue-by-client" && <RevenueByClientTab start={start} end={end} />}
+      {printOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 print:hidden">
+          <Card className="w-full max-w-sm p-5">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-1">Print Reports</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+              Select the reports to print for {periodLabel(period)}.
+            </p>
+            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+              {TABS.map((t) => (
+                <label
+                  key={t.id}
+                  className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200"
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-300 dark:border-slate-700"
+                    checked={printChecks.has(t.id)}
+                    onChange={() => toggleCheck(t.id)}
+                  />
+                  {t.label}
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setPrintOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setPrinting(TABS.map((t) => t.id).filter((id) => printChecks.has(id)));
+                  setPrintOpen(false);
+                }}
+                disabled={printChecks.size === 0}
+              >
+                Print
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {printing && printing.length > 0 && (
+        <div className="hidden print:block space-y-8">
+          <h1 className="text-xl font-semibold">{periodLabel(period)}</h1>
+          {printing.map((id, i) => (
+            <div key={id} className={i < printing.length - 1 ? "break-after-page" : ""}>
+              {renderReportTab(id, start, end)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -310,18 +423,28 @@ function BalanceSheetTab({ asOf }: { asOf: string }) {
         <h2 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Assets</h2>
         <table className="w-full text-sm">
           <tbody>
+            {data.assetRows.length === 0 && (
+              <tr>
+                <td className="py-1 text-slate-400">No assets.</td>
+              </tr>
+            )}
             {data.assetRows.map((r) => (
               <tr key={r.account.id} className="border-b border-slate-50 dark:border-slate-800/60">
                 <td className="py-1.5 text-slate-600 dark:text-slate-300">{r.account.name}</td>
                 <td className="py-1.5 text-right text-slate-700 dark:text-slate-200">{formatCurrency(r.amount)}</td>
               </tr>
             ))}
-            <tr className="font-semibold text-slate-800 dark:text-slate-100 border-t-2 border-slate-200 dark:border-slate-700">
+            <tr className="font-medium text-slate-800 dark:text-slate-100">
               <td className="py-2">Total Assets</td>
               <td className="py-2 text-right">{formatCurrency(data.totalAssets)}</td>
             </tr>
           </tbody>
         </table>
+
+        <div className="flex justify-between items-center border-t-2 border-slate-200 dark:border-slate-700 pt-3 mt-2">
+          <span className="font-semibold text-slate-800 dark:text-slate-100">Total Assets</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(data.totalAssets)}</span>
+        </div>
       </Card>
 
       <Card className="p-5">
@@ -499,6 +622,80 @@ function AgedReceivablesTab({ asOf }: { asOf: string }) {
               {data.rows.map((r) => (
                 <tr key={r.client.id}>
                   <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{fullName(r.client)}</td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.current !== 0 ? formatCurrency(r.current) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.days31to60 !== 0 ? formatCurrency(r.days31to60) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
+                    {r.days61to90 !== 0 ? formatCurrency(r.days61to90) : ""}
+                  </td>
+                  <td className={`px-5 py-2.5 text-right ${r.over90 > 0 ? "text-red-600 font-medium" : "text-slate-700 dark:text-slate-200"}`}>
+                    {r.over90 !== 0 ? formatCurrency(r.over90) : ""}
+                  </td>
+                  <td className="px-5 py-2.5 text-right font-semibold text-slate-800 dark:text-slate-100">
+                    {formatCurrency(r.total)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-100">
+                <td className="px-5 py-2.5">Total</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.current)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.days31to60)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.days61to90)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.over90)}</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AgedPayablesTab({ asOf }: { asOf: string }) {
+  const [data, setData] = useState<AgedPayablesResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.reports.agedPayables(asOf).then(setData).finally(() => setLoading(false));
+  }, [asOf]);
+
+  if (loading || !data) return <p className="text-sm text-slate-500">Loading…</p>;
+
+  return (
+    <Card>
+      <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100">Aged Payables</h2>
+        <span className="text-xs text-slate-400">as of {asOf}</span>
+      </div>
+      {data.rows.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-slate-400">
+          No outstanding balances. Amounts owed appear here once an expense entry is charged to Accounts Payable
+          for a vendor.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-5 py-2 font-medium">Vendor</th>
+                <th className="px-5 py-2 font-medium text-right">Current (0-30)</th>
+                <th className="px-5 py-2 font-medium text-right">31-60 Days</th>
+                <th className="px-5 py-2 font-medium text-right">61-90 Days</th>
+                <th className="px-5 py-2 font-medium text-right">91+ Days</th>
+                <th className="px-5 py-2 font-medium text-right">Total Owed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.rows.map((r) => (
+                <tr key={r.vendor.id}>
+                  <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{r.vendor.businessName}</td>
                   <td className="px-5 py-2.5 text-right text-slate-700 dark:text-slate-200">
                     {r.current !== 0 ? formatCurrency(r.current) : ""}
                   </td>

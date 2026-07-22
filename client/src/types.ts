@@ -156,6 +156,27 @@ export interface AgedReceivablesResponse {
   };
 }
 
+export interface AgedPayableRow {
+  vendor: Vendor;
+  current: number;
+  days31to60: number;
+  days61to90: number;
+  over90: number;
+  total: number;
+}
+
+export interface AgedPayablesResponse {
+  asOf: string;
+  rows: AgedPayableRow[];
+  totals: {
+    current: number;
+    days31to60: number;
+    days61to90: number;
+    over90: number;
+    total: number;
+  };
+}
+
 export interface RevenueByClientRow {
   client: Client | null;
   amount: number;

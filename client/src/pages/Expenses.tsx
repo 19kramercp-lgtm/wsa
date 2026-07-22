@@ -167,7 +167,7 @@ export default function Expenses() {
               className={inputClass}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Fuel — N12345"
+              placeholder="e.g. 10 gallons of fuel"
             />
           </Field>
 

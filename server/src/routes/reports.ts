@@ -6,6 +6,10 @@ function isReceivableAccount(account: Account): boolean {
   return account.type === "asset" && /receivable/i.test(account.name);
 }
 
+function isPayableAccount(account: Account): boolean {
+  return account.type === "liability" && /payable/i.test(account.name);
+}
+
 function daysBetween(earlier: string, later: string): number {
   const [ay, am, ad] = earlier.split("-").map(Number);
   const [by, bm, bd] = later.split("-").map(Number);
@@ -288,6 +292,95 @@ router.get("/aged-receivables", async (req, res) => {
     const total = round2(current + days31to60 + days61to90 + over90);
     if (total === 0) continue;
     rows.push({ client, current, days31to60, days61to90, over90, total });
+  }
+
+  rows.sort((a, b) => b.total - a.total);
+
+  const totals = {
+    current: round2(rows.reduce((sum, r) => sum + r.current, 0)),
+    days31to60: round2(rows.reduce((sum, r) => sum + r.days31to60, 0)),
+    days61to90: round2(rows.reduce((sum, r) => sum + r.days61to90, 0)),
+    over90: round2(rows.reduce((sum, r) => sum + r.over90, 0)),
+    total: round2(rows.reduce((sum, r) => sum + r.total, 0)),
+  };
+
+  res.json({ asOf: asOfStr, rows, totals });
+});
+
+// Aged payables: mirror of aged receivables, but for amounts owed to
+// vendors. Charges are journal entries that credit an Accounts
+// Payable-type account and are tagged with a vendor; payments (debits to
+// that account) are applied FIFO against the vendor's oldest outstanding
+// bills first.
+router.get("/aged-payables", async (req, res) => {
+  const db = await readDatabase();
+  const { asOf } = req.query;
+  const asOfStr = asOf ? String(asOf) : new Date().toISOString().slice(0, 10);
+
+  const apAccountIds = new Set(db.accounts.filter(isPayableAccount).map((a) => a.id));
+
+  const entries = db.journalEntries
+    .filter((e) => e.date <= asOfStr && e.vendorId && e.lines.some((l) => apAccountIds.has(l.accountId)))
+    .sort((a, b) => (a.date === b.date ? a.createdAt.localeCompare(b.createdAt) : a.date.localeCompare(b.date)));
+
+  interface Charge {
+    date: string;
+    remaining: number;
+  }
+
+  const chargesByVendor = new Map<string, Charge[]>();
+
+  for (const entry of entries) {
+    const apDelta = round2(
+      entry.lines.reduce((sum, l) => (apAccountIds.has(l.accountId) ? sum + l.credit - l.debit : sum), 0)
+    );
+    if (apDelta === 0) continue;
+    const vendorId = entry.vendorId as string;
+    const charges = chargesByVendor.get(vendorId) ?? [];
+    chargesByVendor.set(vendorId, charges);
+
+    if (apDelta > 0) {
+      charges.push({ date: entry.date, remaining: apDelta });
+    } else {
+      let paymentRemaining = -apDelta;
+      for (const charge of charges) {
+        if (paymentRemaining <= 0) break;
+        if (charge.remaining <= 0) continue;
+        const applied = Math.min(charge.remaining, paymentRemaining);
+        charge.remaining = round2(charge.remaining - applied);
+        paymentRemaining = round2(paymentRemaining - applied);
+      }
+      if (paymentRemaining > 0) {
+        // Payment exceeds all known bills (credit balance) — keep as a
+        // negative charge dated today so it still nets out correctly.
+        charges.push({ date: entry.date, remaining: -paymentRemaining });
+      }
+    }
+  }
+
+  const rows = [];
+  for (const [vendorId, charges] of chargesByVendor) {
+    const vendor = db.vendors.find((v) => v.id === vendorId);
+    if (!vendor) continue;
+    let current = 0;
+    let days31to60 = 0;
+    let days61to90 = 0;
+    let over90 = 0;
+    for (const charge of charges) {
+      if (charge.remaining === 0) continue;
+      const age = daysBetween(charge.date, asOfStr);
+      if (age <= 30) current += charge.remaining;
+      else if (age <= 60) days31to60 += charge.remaining;
+      else if (age <= 90) days61to90 += charge.remaining;
+      else over90 += charge.remaining;
+    }
+    current = round2(current);
+    days31to60 = round2(days31to60);
+    days61to90 = round2(days61to90);
+    over90 = round2(over90);
+    const total = round2(current + days31to60 + days61to90 + over90);
+    if (total === 0) continue;
+    rows.push({ vendor, current, days31to60, days61to90, over90, total });
   }
 
   rows.sort((a, b) => b.total - a.total);

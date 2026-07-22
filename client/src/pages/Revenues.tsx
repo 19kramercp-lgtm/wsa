@@ -161,7 +161,7 @@ export default function Revenues() {
               className={inputClass}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. 2 hrs dual instruction — Cessna 172"
+              placeholder="e.g. 2 hours flight instruction"
             />
           </Field>
 
