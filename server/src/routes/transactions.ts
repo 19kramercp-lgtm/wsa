@@ -16,10 +16,12 @@ function closedPeriodError(date: string): { error: string } {
 }
 
 router.post("/revenue", async (req, res) => {
-  const { date, description, revenueAccountId, depositAccountId, amount, reference, payer } = req.body ?? {};
+  const { date, description, revenueAccountId, depositAccountId, amount, reference, clientId } = req.body ?? {};
   const amt = round2(Number(amount));
-  if (!date || !revenueAccountId || !depositAccountId || !amt || amt <= 0) {
-    return res.status(400).json({ error: "date, revenueAccountId, depositAccountId, and a positive amount are required" });
+  if (!date || !revenueAccountId || !depositAccountId || !amt || amt <= 0 || !clientId) {
+    return res
+      .status(400)
+      .json({ error: "date, revenueAccountId, depositAccountId, clientId, and a positive amount are required" });
   }
   const db = await readDatabase();
   if (isPeriodClosed(String(date), db.closedPeriods)) {
@@ -27,21 +29,26 @@ router.post("/revenue", async (req, res) => {
   }
   const revenueAccount = db.accounts.find((a) => a.id === revenueAccountId);
   const depositAccount = db.accounts.find((a) => a.id === depositAccountId);
+  const client = db.clients.find((c) => c.id === clientId);
   if (!revenueAccount || revenueAccount.type !== "revenue") {
     return res.status(400).json({ error: "revenueAccountId must reference a revenue account" });
   }
   if (!depositAccount) {
     return res.status(400).json({ error: "depositAccountId must reference a valid account" });
   }
+  if (!client) {
+    return res.status(400).json({ error: "clientId must reference a valid client" });
+  }
 
   const now = new Date().toISOString();
-  const memo = description || `Revenue: ${revenueAccount.name}${payer ? ` — ${payer}` : ""}`;
+  const memo = description || `Revenue: ${revenueAccount.name} — ${client.name}`;
   const entry: JournalEntry = {
     id: uuidv4(),
     date: String(date),
     memo,
     reference: reference ?? String(db.meta.nextJournalNumber).padStart(5, "0"),
     source: "revenue",
+    clientId: client.id,
     lines: [
       { id: uuidv4(), accountId: depositAccount.id, debit: amt, credit: 0, description: memo },
       { id: uuidv4(), accountId: revenueAccount.id, debit: 0, credit: amt, description: memo },
@@ -56,10 +63,12 @@ router.post("/revenue", async (req, res) => {
 });
 
 router.post("/expense", async (req, res) => {
-  const { date, description, expenseAccountId, paymentAccountId, amount, reference, payee } = req.body ?? {};
+  const { date, description, expenseAccountId, paymentAccountId, amount, reference, clientId } = req.body ?? {};
   const amt = round2(Number(amount));
-  if (!date || !expenseAccountId || !paymentAccountId || !amt || amt <= 0) {
-    return res.status(400).json({ error: "date, expenseAccountId, paymentAccountId, and a positive amount are required" });
+  if (!date || !expenseAccountId || !paymentAccountId || !amt || amt <= 0 || !clientId) {
+    return res
+      .status(400)
+      .json({ error: "date, expenseAccountId, paymentAccountId, clientId, and a positive amount are required" });
   }
   const db = await readDatabase();
   if (isPeriodClosed(String(date), db.closedPeriods)) {
@@ -67,21 +76,26 @@ router.post("/expense", async (req, res) => {
   }
   const expenseAccount = db.accounts.find((a) => a.id === expenseAccountId);
   const paymentAccount = db.accounts.find((a) => a.id === paymentAccountId);
+  const client = db.clients.find((c) => c.id === clientId);
   if (!expenseAccount || expenseAccount.type !== "expense") {
     return res.status(400).json({ error: "expenseAccountId must reference an expense account" });
   }
   if (!paymentAccount) {
     return res.status(400).json({ error: "paymentAccountId must reference a valid account" });
   }
+  if (!client) {
+    return res.status(400).json({ error: "clientId must reference a valid client" });
+  }
 
   const now = new Date().toISOString();
-  const memo = description || `Expense: ${expenseAccount.name}${payee ? ` — ${payee}` : ""}`;
+  const memo = description || `Expense: ${expenseAccount.name} — ${client.name}`;
   const entry: JournalEntry = {
     id: uuidv4(),
     date: String(date),
     memo,
     reference: reference ?? String(db.meta.nextJournalNumber).padStart(5, "0"),
     source: "expense",
+    clientId: client.id,
     lines: [
       { id: uuidv4(), accountId: expenseAccount.id, debit: amt, credit: 0, description: memo },
       { id: uuidv4(), accountId: paymentAccount.id, debit: 0, credit: amt, description: memo },

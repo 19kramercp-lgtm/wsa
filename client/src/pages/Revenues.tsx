@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { formatCurrency, formatDate, todayISO } from "../utils/format";
 import { isDateInClosedPeriod, periodLabel } from "../utils/period";
 import { useClosedPeriods } from "../utils/useClosedPeriods";
+import { useClients } from "../utils/useClients";
 import type { Account, JournalEntry } from "../types";
 
 export default function Revenues() {
@@ -14,10 +16,11 @@ export default function Revenues() {
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const closedPeriods = useClosedPeriods();
+  const { clients, loading: clientsLoading } = useClients();
 
   const [date, setDate] = useState(todayISO());
   const [description, setDescription] = useState("");
-  const [payer, setPayer] = useState("");
+  const [clientId, setClientId] = useState("");
   const [revenueAccountId, setRevenueAccountId] = useState("");
   const [depositAccountId, setDepositAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -31,6 +34,8 @@ export default function Revenues() {
     [accounts]
   );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const sortedClients = useMemo(() => [...clients].sort((a, b) => a.name.localeCompare(b.name)), [clients]);
 
   function load() {
     setLoading(true);
@@ -58,6 +63,10 @@ export default function Revenues() {
       setError("Enter an amount greater than zero.");
       return;
     }
+    if (!clientId) {
+      setError("Select a payer.");
+      return;
+    }
     if (dateIsClosed) {
       setError(`${periodLabel(date.slice(0, 7))} is closed. Reopen it on the Reports tab to add entries here.`);
       return;
@@ -67,14 +76,14 @@ export default function Revenues() {
       await api.transactions.revenue({
         date,
         description,
-        payer,
+        clientId,
         revenueAccountId,
         depositAccountId,
         amount: amt,
       });
       setSuccess(`Recorded ${formatCurrency(amt)} of revenue.`);
       setDescription("");
-      setPayer("");
+      setClientId("");
       setAmount("");
       load();
     } catch (err) {
@@ -130,8 +139,24 @@ export default function Revenues() {
               ))}
             </select>
           </Field>
-          <Field label="Payer / Student (optional)">
-            <input className={inputClass} value={payer} onChange={(e) => setPayer(e.target.value)} placeholder="e.g. Jane Smith" />
+          <Field label="Payer">
+            <select className={inputClass} value={clientId} onChange={(e) => setClientId(e.target.value)} required>
+              <option value="">Select client…</option>
+              {sortedClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {!clientsLoading && clients.length === 0 && (
+              <span className="mt-1 block text-xs text-slate-400">
+                No clients yet.{" "}
+                <Link to="/chart-of-accounts" className="text-brand-600 hover:underline">
+                  Add one in Chart of Accounts
+                </Link>
+                .
+              </span>
+            )}
           </Field>
           <Field label="Description (optional)">
             <input
@@ -184,6 +209,7 @@ export default function Revenues() {
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
                   <th className="px-5 py-2 font-medium">Date</th>
                   <th className="px-5 py-2 font-medium">Description</th>
+                  <th className="px-5 py-2 font-medium">Payer</th>
                   <th className="px-5 py-2 font-medium">Account</th>
                   <th className="px-5 py-2 font-medium">Deposited To</th>
                   <th className="px-5 py-2 font-medium text-right">Amount</th>
@@ -197,6 +223,7 @@ export default function Revenues() {
                     <tr key={e.id}>
                       <td className="px-5 py-2.5 text-slate-500">{formatDate(e.date)}</td>
                       <td className="px-5 py-2.5 text-slate-700 dark:text-slate-200">{e.memo}</td>
+                      <td className="px-5 py-2.5 text-slate-500">{e.clientId ? clientById.get(e.clientId)?.name ?? "—" : "—"}</td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(revLine?.accountId ?? "")?.name}</td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(depLine?.accountId ?? "")?.name}</td>
                       <td className="px-5 py-2.5 text-right font-medium text-emerald-600">

@@ -82,6 +82,7 @@ router.post("/", async (req, res) => {
     memo: memo ?? "",
     reference: reference ?? String(db.meta.nextJournalNumber).padStart(5, "0"),
     source: source ?? "manual",
+    clientId: null,
     lines: result.lines,
     createdAt: now,
     updatedAt: now,

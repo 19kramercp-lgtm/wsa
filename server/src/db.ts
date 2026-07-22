@@ -103,6 +103,7 @@ function defaultDatabase(): Database {
     accounts: seedAccounts(),
     journalEntries: [],
     closedPeriods: [],
+    clients: [],
     meta: { nextJournalNumber: 1 },
   };
 }
@@ -119,10 +120,14 @@ export function inferCashFlowCategory(account: Pick<Account, "type" | "name">): 
 
 function migrate(db: Database): Database {
   if (!db.closedPeriods) db.closedPeriods = [];
+  if (!db.clients) db.clients = [];
   for (const account of db.accounts) {
     if (!account.cashFlowCategory) {
       account.cashFlowCategory = inferCashFlowCategory(account);
     }
+  }
+  for (const entry of db.journalEntries) {
+    if (entry.clientId === undefined) entry.clientId = null;
   }
   return db;
 }

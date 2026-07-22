@@ -32,6 +32,7 @@ export interface JournalEntry {
   reference: string;
   source: JournalSource;
   lines: JournalLine[];
+  clientId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -117,4 +118,13 @@ export interface CashFlowResponse {
 export interface ClosedPeriod {
   period: string;
   closedAt: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  createdAt: string;
 }

@@ -34,6 +34,7 @@ export interface JournalEntry {
   reference: string;
   source: JournalSource;
   lines: JournalLine[];
+  clientId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,10 +44,20 @@ export interface ClosedPeriod {
   closedAt: string;
 }
 
+export interface Client {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  createdAt: string;
+}
+
 export interface Database {
   accounts: Account[];
   journalEntries: JournalEntry[];
   closedPeriods: ClosedPeriod[];
+  clients: Client[];
   meta: {
     nextJournalNumber: number;
   };

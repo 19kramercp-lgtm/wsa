@@ -44,7 +44,6 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const cashAccounts = accounts.filter((a) => a.type === "asset" && /cash/i.test(a.name));
   const accountById = new Map(accounts.map((a) => [a.id, a]));
 
   const recent = [...entries]
@@ -82,12 +81,7 @@ export default function Dashboard() {
         <StatCard label="Revenue (MTD)" value={formatCurrency(mtd?.totalRevenue ?? 0)} tone="emerald" />
         <StatCard label="Expenses (MTD)" value={formatCurrency(mtd?.totalExpenses ?? 0)} tone="red" />
         <StatCard label="Net Income (YTD)" value={formatCurrency(ytd?.netIncome ?? 0)} tone="blue" />
-        <StatCard
-          label="Cash on Hand"
-          value={formatCurrency(cashBalance)}
-          tone="slate"
-          hint={cashAccounts.map((a) => a.name).join(", ") || "No cash accounts"}
-        />
+        <StatCard label="Cash on Hand" value={formatCurrency(cashBalance)} tone="slate" />
       </div>
 
       <Card>

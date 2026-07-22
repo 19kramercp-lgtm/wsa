@@ -2,6 +2,7 @@ import type {
   Account,
   BalanceSheetResponse,
   CashFlowResponse,
+  Client,
   ClosedPeriod,
   IncomeStatementResponse,
   JournalEntry,
@@ -57,7 +58,7 @@ export const api = {
       revenueAccountId: string;
       depositAccountId: string;
       amount: number;
-      payer?: string;
+      clientId: string;
       reference?: string;
     }) => request<JournalEntry>("/transactions/revenue", { method: "POST", body: JSON.stringify(data) }),
     expense: (data: {
@@ -66,7 +67,7 @@ export const api = {
       expenseAccountId: string;
       paymentAccountId: string;
       amount: number;
-      payee?: string;
+      clientId: string;
       reference?: string;
     }) => request<JournalEntry>("/transactions/expense", { method: "POST", body: JSON.stringify(data) }),
   },
@@ -95,5 +96,12 @@ export const api = {
     close: (period: string) =>
       request<ClosedPeriod>("/periods/close", { method: "POST", body: JSON.stringify({ period }) }),
     reopen: (period: string) => request<void>("/periods/reopen", { method: "POST", body: JSON.stringify({ period }) }),
+  },
+  clients: {
+    list: () => request<Client[]>("/clients"),
+    create: (data: Partial<Client>) => request<Client>("/clients", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Client>) =>
+      request<Client>(`/clients/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/clients/${id}`, { method: "DELETE" }),
   },
 };
