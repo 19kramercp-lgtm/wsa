@@ -93,10 +93,13 @@ export function Field({
 export const inputClass =
   "w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 shadow-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none";
 
-export function Alert({ tone, children }: PropsWithChildren<{ tone: "error" | "success" }>) {
-  const styles =
-    tone === "error"
-      ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900/40"
-      : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900/40";
+export function Alert({ tone, children }: PropsWithChildren<{ tone: "error" | "success" | "warning" }>) {
+  const styles = {
+    error: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900/40",
+    success:
+      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-900/40",
+    warning:
+      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-900/40",
+  }[tone];
   return <div className={`rounded-lg border px-3.5 py-2.5 text-sm ${styles}`}>{children}</div>;
 }

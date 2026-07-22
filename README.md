@@ -75,8 +75,17 @@ it with a chart of accounts tailored to a flight school (see below).
   quick-entry forms don't cover (adjusting entries, depreciation, transfers).
 - **General Ledger** — pick any account to see its full transaction history
   and running balance.
-- **Reports** — Trial Balance, Income Statement (P&L), and Balance Sheet, each
-  with date filtering, computed live from the journal.
+- **Reports** — Trial Balance, Income Statement (P&L), Balance Sheet, and
+  Statement of Cash Flows, all driven by a shared monthly period selector
+  (with prev/next navigation) so you can page through any month.
+- **Close the books** — close a month from the Reports tab to lock it: no
+  revenue, expense, or journal entry dated in that month can be added,
+  edited, or deleted (in the API or the UI) until it's reopened. Forms warn
+  you up front if the date you picked falls in a closed month.
+- **Statement of Cash Flows** — derived automatically from actual cash
+  account activity each period, categorized into Operating / Investing /
+  Financing based on each account's `cashFlowCategory` (editable per account
+  in the Chart of Accounts; revenue and expenses are always Operating).
 
 ## Project structure
 

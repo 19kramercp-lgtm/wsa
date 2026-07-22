@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
-import type { Account, Database } from "./types.js";
+import type { Account, CashFlowCategory, ClosedPeriod, Database } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "data");
@@ -15,7 +15,8 @@ function seedAccounts(): Account[] {
     name: string,
     type: Account["type"],
     normalBalance: Account["normalBalance"],
-    description = ""
+    description = "",
+    cashFlowCategory: CashFlowCategory = "operating"
   ): Account => ({
     id: uuidv4(),
     code,
@@ -26,26 +27,55 @@ function seedAccounts(): Account[] {
     active: true,
     isSystem: true,
     createdAt: now,
+    cashFlowCategory,
   });
 
   return [
     // Assets
     make("1000", "Cash - Operating Account", "asset", "debit", "Primary business checking account"),
     make("1010", "Cash - Savings", "asset", "debit", "Business savings account"),
-    make("1020", "Accounts Receivable", "asset", "debit", "Amounts owed by students/clients"),
-    make("1030", "Prepaid Insurance", "asset", "debit", "Insurance paid in advance"),
-    make("1500", "Aircraft", "asset", "debit", "Aircraft owned by the company"),
-    make("1510", "Accumulated Depreciation - Aircraft", "asset", "credit", "Contra-asset for aircraft depreciation"),
-    make("1600", "Flight Equipment & Simulators", "asset", "debit", "Headsets, simulators, training equipment"),
+    make("1020", "Accounts Receivable", "asset", "debit", "Amounts owed by students/clients", "operating"),
+    make("1030", "Prepaid Insurance", "asset", "debit", "Insurance paid in advance", "operating"),
+    make("1500", "Aircraft", "asset", "debit", "Aircraft owned by the company", "investing"),
+    make(
+      "1510",
+      "Accumulated Depreciation - Aircraft",
+      "asset",
+      "credit",
+      "Contra-asset for aircraft depreciation",
+      "investing"
+    ),
+    make(
+      "1600",
+      "Flight Equipment & Simulators",
+      "asset",
+      "debit",
+      "Headsets, simulators, training equipment",
+      "investing"
+    ),
     // Liabilities
-    make("2000", "Accounts Payable", "liability", "credit", "Amounts owed to vendors"),
-    make("2010", "Accrued Liabilities", "liability", "credit", "Accrued expenses not yet paid"),
-    make("2020", "Unearned Revenue", "liability", "credit", "Prepaid lesson packages / deposits from students"),
-    make("2100", "Notes Payable - Aircraft Loan", "liability", "credit", "Loan(s) used to finance aircraft"),
+    make("2000", "Accounts Payable", "liability", "credit", "Amounts owed to vendors", "operating"),
+    make("2010", "Accrued Liabilities", "liability", "credit", "Accrued expenses not yet paid", "operating"),
+    make(
+      "2020",
+      "Unearned Revenue",
+      "liability",
+      "credit",
+      "Prepaid lesson packages / deposits from students",
+      "operating"
+    ),
+    make(
+      "2100",
+      "Notes Payable - Aircraft Loan",
+      "liability",
+      "credit",
+      "Loan(s) used to finance aircraft",
+      "financing"
+    ),
     // Equity
-    make("3000", "Owner's Equity", "equity", "credit", "Owner capital contributions"),
-    make("3010", "Retained Earnings", "equity", "credit", "Accumulated earnings"),
-    make("3900", "Owner's Draws", "equity", "debit", "Owner withdrawals"),
+    make("3000", "Owner's Equity", "equity", "credit", "Owner capital contributions", "financing"),
+    make("3010", "Retained Earnings", "equity", "credit", "Accumulated earnings", "financing"),
+    make("3900", "Owner's Draws", "equity", "debit", "Owner withdrawals", "financing"),
     // Revenue
     make("4000", "Flight Instruction Revenue", "revenue", "credit", "Dual flight instruction fees"),
     make("4010", "Ground Instruction Revenue", "revenue", "credit", "Ground school / classroom instruction fees"),
@@ -72,8 +102,29 @@ function defaultDatabase(): Database {
   return {
     accounts: seedAccounts(),
     journalEntries: [],
+    closedPeriods: [],
     meta: { nextJournalNumber: 1 },
   };
+}
+
+export function inferCashFlowCategory(account: Pick<Account, "type" | "name">): CashFlowCategory {
+  if (account.type === "revenue" || account.type === "expense") return "operating";
+  if (account.type === "equity") return "financing";
+  if (account.type === "liability") {
+    return /notes payable|loan/i.test(account.name) ? "financing" : "operating";
+  }
+  // asset
+  return /aircraft|equipment|simulator|depreciation|vehicle|building/i.test(account.name) ? "investing" : "operating";
+}
+
+function migrate(db: Database): Database {
+  if (!db.closedPeriods) db.closedPeriods = [];
+  for (const account of db.accounts) {
+    if (!account.cashFlowCategory) {
+      account.cashFlowCategory = inferCashFlowCategory(account);
+    }
+  }
+  return db;
 }
 
 let writeQueue: Promise<void> = Promise.resolve();
@@ -90,7 +141,7 @@ async function ensureDataFile(): Promise<void> {
 export async function readDatabase(): Promise<Database> {
   await ensureDataFile();
   const raw = await fs.readFile(DATA_FILE, "utf-8");
-  return JSON.parse(raw) as Database;
+  return migrate(JSON.parse(raw) as Database);
 }
 
 export async function writeDatabase(db: Database): Promise<void> {
@@ -101,6 +152,11 @@ export async function writeDatabase(db: Database): Promise<void> {
   });
   writeQueue = task.catch(() => undefined);
   return task;
+}
+
+export function isPeriodClosed(date: string, closedPeriods: ClosedPeriod[]): boolean {
+  const period = date.slice(0, 7);
+  return closedPeriods.some((cp) => cp.period === period);
 }
 
 export { DATA_FILE };

@@ -7,6 +7,7 @@ import journalRouter from "./routes/journal.js";
 import transactionsRouter from "./routes/transactions.js";
 import ledgerRouter from "./routes/ledger.js";
 import reportsRouter from "./routes/reports.js";
+import periodsRouter from "./routes/periods.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -20,6 +21,7 @@ app.use("/api/journal-entries", journalRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/ledger", ledgerRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/periods", periodsRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", company: "Wingspan Aviation" });

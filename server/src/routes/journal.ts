@@ -1,7 +1,13 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { readDatabase, writeDatabase } from "../db.js";
+import { isPeriodClosed, readDatabase, writeDatabase } from "../db.js";
 import type { JournalEntry, JournalLine } from "../types.js";
+
+function closedPeriodError(date: string): { error: string } {
+  return {
+    error: `The period ${date.slice(0, 7)} is closed for editing. Reopen it on the Reports tab to make changes.`,
+  };
+}
 
 const router = Router();
 
@@ -59,6 +65,9 @@ router.post("/", async (req, res) => {
   if ("error" in result) return res.status(400).json({ error: result.error });
 
   const db = await readDatabase();
+  if (isPeriodClosed(String(date), db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(String(date)));
+  }
   const validAccountIds = new Set(db.accounts.map((a) => a.id));
   for (const line of result.lines) {
     if (!validAccountIds.has(line.accountId)) {
@@ -88,7 +97,14 @@ router.put("/:id", async (req, res) => {
   const entry = db.journalEntries.find((e) => e.id === req.params.id);
   if (!entry) return res.status(404).json({ error: "Journal entry not found" });
 
+  if (isPeriodClosed(entry.date, db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(entry.date));
+  }
+
   const { date, memo, reference, lines: rawLines } = req.body ?? {};
+  if (date !== undefined && isPeriodClosed(String(date), db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(String(date)));
+  }
   if (rawLines !== undefined) {
     const result = validateLines(rawLines);
     if ("error" in result) return res.status(400).json({ error: result.error });
@@ -111,8 +127,11 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const db = await readDatabase();
-  const exists = db.journalEntries.some((e) => e.id === req.params.id);
-  if (!exists) return res.status(404).json({ error: "Journal entry not found" });
+  const entry = db.journalEntries.find((e) => e.id === req.params.id);
+  if (!entry) return res.status(404).json({ error: "Journal entry not found" });
+  if (isPeriodClosed(entry.date, db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(entry.date));
+  }
   db.journalEntries = db.journalEntries.filter((e) => e.id !== req.params.id);
   await writeDatabase(db);
   res.status(204).send();

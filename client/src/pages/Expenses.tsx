@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { formatCurrency, formatDate, todayISO } from "../utils/format";
+import { isDateInClosedPeriod, periodLabel } from "../utils/period";
+import { useClosedPeriods } from "../utils/useClosedPeriods";
 import type { Account, JournalEntry } from "../types";
 
 export default function Expenses() {
@@ -11,6 +13,7 @@ export default function Expenses() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const closedPeriods = useClosedPeriods();
 
   const [date, setDate] = useState(todayISO());
   const [description, setDescription] = useState("");
@@ -47,6 +50,8 @@ export default function Expenses() {
 
   useEffect(load, []);
 
+  const dateIsClosed = isDateInClosedPeriod(date, closedPeriods);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -54,6 +59,10 @@ export default function Expenses() {
     const amt = Number(amount);
     if (!amt || amt <= 0) {
       setError("Enter an amount greater than zero.");
+      return;
+    }
+    if (dateIsClosed) {
+      setError(`${periodLabel(date.slice(0, 7))} is closed. Reopen it on the Reports tab to add entries here.`);
       return;
     }
     setSaving(true);
@@ -136,6 +145,13 @@ export default function Expenses() {
             />
           </Field>
 
+          {dateIsClosed && !error && (
+            <div className="sm:col-span-2">
+              <Alert tone="warning">
+                {periodLabel(date.slice(0, 7))} is closed. Reopen it on the Reports tab before recording entries here.
+              </Alert>
+            </div>
+          )}
           {error && (
             <div className="sm:col-span-2">
               <Alert tone="error">{error}</Alert>
@@ -148,7 +164,7 @@ export default function Expenses() {
           )}
 
           <div className="sm:col-span-2">
-            <Button type="submit" variant="danger" disabled={saving}>
+            <Button type="submit" variant="danger" disabled={saving || dateIsClosed}>
               Record Expense
             </Button>
           </div>

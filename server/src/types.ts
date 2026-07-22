@@ -2,6 +2,8 @@ export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expens
 
 export type NormalBalance = "debit" | "credit";
 
+export type CashFlowCategory = "operating" | "investing" | "financing";
+
 export interface Account {
   id: string;
   code: string;
@@ -12,6 +14,7 @@ export interface Account {
   active: boolean;
   isSystem: boolean;
   createdAt: string;
+  cashFlowCategory: CashFlowCategory;
 }
 
 export interface JournalLine {
@@ -35,9 +38,15 @@ export interface JournalEntry {
   updatedAt: string;
 }
 
+export interface ClosedPeriod {
+  period: string; // "YYYY-MM"
+  closedAt: string;
+}
+
 export interface Database {
   accounts: Account[];
   journalEntries: JournalEntry[];
+  closedPeriods: ClosedPeriod[];
   meta: {
     nextJournalNumber: number;
   };

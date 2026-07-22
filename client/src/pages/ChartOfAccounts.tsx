@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { EditIcon, PlusIcon, TrashIcon } from "../components/Icons";
-import type { Account, AccountType, NormalBalance } from "../types";
+import type { Account, AccountType, CashFlowCategory, NormalBalance } from "../types";
 
 const TYPE_ORDER: AccountType[] = ["asset", "liability", "equity", "revenue", "expense"];
 const TYPE_LABELS: Record<AccountType, string> = {
@@ -19,6 +19,18 @@ const DEFAULT_NORMAL: Record<AccountType, NormalBalance> = {
   revenue: "credit",
   expense: "debit",
 };
+const CASH_FLOW_LABELS: Record<CashFlowCategory, string> = {
+  operating: "Operating",
+  investing: "Investing",
+  financing: "Financing",
+};
+const DEFAULT_CASH_FLOW: Record<AccountType, CashFlowCategory> = {
+  asset: "operating",
+  liability: "operating",
+  equity: "financing",
+  revenue: "operating",
+  expense: "operating",
+};
 
 interface FormState {
   id?: string;
@@ -27,9 +39,17 @@ interface FormState {
   type: AccountType;
   normalBalance: NormalBalance;
   description: string;
+  cashFlowCategory: CashFlowCategory;
 }
 
-const emptyForm: FormState = { code: "", name: "", type: "asset", normalBalance: "debit", description: "" };
+const emptyForm: FormState = {
+  code: "",
+  name: "",
+  type: "asset",
+  normalBalance: "debit",
+  description: "",
+  cashFlowCategory: "operating",
+};
 
 export default function ChartOfAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -71,6 +91,7 @@ export default function ChartOfAccounts() {
           code: form.code,
           name: form.name,
           description: form.description,
+          cashFlowCategory: form.cashFlowCategory,
         });
       } else {
         await api.accounts.create(form);
@@ -86,7 +107,15 @@ export default function ChartOfAccounts() {
   }
 
   function startEdit(a: Account) {
-    setForm({ id: a.id, code: a.code, name: a.name, type: a.type, normalBalance: a.normalBalance, description: a.description });
+    setForm({
+      id: a.id,
+      code: a.code,
+      name: a.name,
+      type: a.type,
+      normalBalance: a.normalBalance,
+      description: a.description,
+      cashFlowCategory: a.cashFlowCategory,
+    });
     setShowForm(true);
   }
 
@@ -162,7 +191,7 @@ export default function ChartOfAccounts() {
                 disabled={!!form.id}
                 onChange={(e) => {
                   const type = e.target.value as AccountType;
-                  setForm({ ...form, type, normalBalance: DEFAULT_NORMAL[type] });
+                  setForm({ ...form, type, normalBalance: DEFAULT_NORMAL[type], cashFlowCategory: DEFAULT_CASH_FLOW[type] });
                 }}
               >
                 {TYPE_ORDER.map((t) => (
@@ -183,6 +212,19 @@ export default function ChartOfAccounts() {
                 <option value="credit">Credit</option>
               </select>
             </Field>
+            {form.type !== "revenue" && form.type !== "expense" && (
+              <Field label="Cash Flow Category" hint="Used on the Statement of Cash Flows">
+                <select
+                  className={inputClass}
+                  value={form.cashFlowCategory}
+                  onChange={(e) => setForm({ ...form, cashFlowCategory: e.target.value as CashFlowCategory })}
+                >
+                  <option value="operating">Operating</option>
+                  <option value="investing">Investing</option>
+                  <option value="financing">Financing</option>
+                </select>
+              </Field>
+            )}
             <div className="sm:col-span-2">
               <Field label="Description">
                 <input
@@ -239,6 +281,7 @@ export default function ChartOfAccounts() {
                         <th className="px-5 py-2 font-medium">Name</th>
                         <th className="px-5 py-2 font-medium hidden md:table-cell">Description</th>
                         <th className="px-5 py-2 font-medium">Normal Bal.</th>
+                        <th className="px-5 py-2 font-medium hidden lg:table-cell">Cash Flow</th>
                         <th className="px-5 py-2 font-medium">Status</th>
                         <th className="px-5 py-2 font-medium text-right">Actions</th>
                       </tr>
@@ -252,6 +295,9 @@ export default function ChartOfAccounts() {
                             <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{a.name}</td>
                             <td className="px-5 py-2.5 text-slate-500 hidden md:table-cell">{a.description}</td>
                             <td className="px-5 py-2.5 capitalize text-slate-500">{a.normalBalance}</td>
+                            <td className="px-5 py-2.5 hidden lg:table-cell text-slate-500">
+                              {CASH_FLOW_LABELS[a.cashFlowCategory]}
+                            </td>
                             <td className="px-5 py-2.5">
                               <Badge tone={a.active ? "green" : "slate"}>{a.active ? "Active" : "Inactive"}</Badge>
                             </td>

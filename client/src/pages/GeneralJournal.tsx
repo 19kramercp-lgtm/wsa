@@ -3,6 +3,8 @@ import { api } from "../api/client";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { PlusIcon, TrashIcon } from "../components/Icons";
 import { formatCurrency, formatDate, todayISO } from "../utils/format";
+import { isDateInClosedPeriod, periodLabel } from "../utils/period";
+import { useClosedPeriods } from "../utils/useClosedPeriods";
 import type { Account, JournalEntry, JournalLine } from "../types";
 
 interface DraftLine {
@@ -21,6 +23,7 @@ export default function GeneralJournal() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const closedPeriods = useClosedPeriods();
 
   const [date, setDate] = useState(todayISO());
   const [memo, setMemo] = useState("");
@@ -60,6 +63,10 @@ export default function GeneralJournal() {
     setError(null);
     if (diff !== 0) {
       setError(`Entry does not balance. Debits ${formatCurrency(totalDebit)} vs credits ${formatCurrency(totalCredit)}.`);
+      return;
+    }
+    if (isDateInClosedPeriod(date, closedPeriods)) {
+      setError(`${periodLabel(date.slice(0, 7))} is closed. Reopen it on the Reports tab to post entries here.`);
       return;
     }
     const payloadLines = lines
@@ -135,6 +142,12 @@ export default function GeneralJournal() {
                 />
               </Field>
             </div>
+
+            {isDateInClosedPeriod(date, closedPeriods) && (
+              <Alert tone="warning">
+                {periodLabel(date.slice(0, 7))} is closed. Reopen it on the Reports tab before posting entries here.
+              </Alert>
+            )}
 
             <div className="overflow-x-auto -mx-1">
               <table className="w-full text-sm min-w-[560px]">
@@ -234,7 +247,7 @@ export default function GeneralJournal() {
             )}
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || isDateInClosedPeriod(date, closedPeriods)}>
                 Post Entry
               </Button>
               <Button

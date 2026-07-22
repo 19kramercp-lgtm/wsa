@@ -40,6 +40,13 @@ body {
   box-sizing: border-box;
 }
 
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

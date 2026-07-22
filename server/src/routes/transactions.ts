@@ -1,12 +1,18 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { readDatabase, writeDatabase } from "../db.js";
+import { isPeriodClosed, readDatabase, writeDatabase } from "../db.js";
 import type { JournalEntry } from "../types.js";
 
 const router = Router();
 
 function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+function closedPeriodError(date: string): { error: string } {
+  return {
+    error: `The period ${date.slice(0, 7)} is closed for editing. Reopen it on the Reports tab to make changes.`,
+  };
 }
 
 router.post("/revenue", async (req, res) => {
@@ -16,6 +22,9 @@ router.post("/revenue", async (req, res) => {
     return res.status(400).json({ error: "date, revenueAccountId, depositAccountId, and a positive amount are required" });
   }
   const db = await readDatabase();
+  if (isPeriodClosed(String(date), db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(String(date)));
+  }
   const revenueAccount = db.accounts.find((a) => a.id === revenueAccountId);
   const depositAccount = db.accounts.find((a) => a.id === depositAccountId);
   if (!revenueAccount || revenueAccount.type !== "revenue") {
@@ -53,6 +62,9 @@ router.post("/expense", async (req, res) => {
     return res.status(400).json({ error: "date, expenseAccountId, paymentAccountId, and a positive amount are required" });
   }
   const db = await readDatabase();
+  if (isPeriodClosed(String(date), db.closedPeriods)) {
+    return res.status(409).json(closedPeriodError(String(date)));
+  }
   const expenseAccount = db.accounts.find((a) => a.id === expenseAccountId);
   const paymentAccount = db.accounts.find((a) => a.id === paymentAccountId);
   if (!expenseAccount || expenseAccount.type !== "expense") {

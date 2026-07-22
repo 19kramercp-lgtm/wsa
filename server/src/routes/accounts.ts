@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { readDatabase, writeDatabase } from "../db.js";
-import type { Account } from "../types.js";
+import { inferCashFlowCategory, readDatabase, writeDatabase } from "../db.js";
+import type { Account, CashFlowCategory } from "../types.js";
 
 const router = Router();
+
+const VALID_CASH_FLOW_CATEGORIES: CashFlowCategory[] = ["operating", "investing", "financing"];
 
 router.get("/", async (_req, res) => {
   const db = await readDatabase();
@@ -12,7 +14,7 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { code, name, type, normalBalance, description } = req.body ?? {};
+  const { code, name, type, normalBalance, description, cashFlowCategory } = req.body ?? {};
   if (!code || !name || !type || !normalBalance) {
     return res.status(400).json({ error: "code, name, type, and normalBalance are required" });
   }
@@ -30,6 +32,9 @@ router.post("/", async (req, res) => {
     active: true,
     isSystem: false,
     createdAt: new Date().toISOString(),
+    cashFlowCategory: VALID_CASH_FLOW_CATEGORIES.includes(cashFlowCategory)
+      ? cashFlowCategory
+      : inferCashFlowCategory({ type, name }),
   };
   db.accounts.push(account);
   await writeDatabase(db);
@@ -41,7 +46,7 @@ router.put("/:id", async (req, res) => {
   const account = db.accounts.find((a) => a.id === req.params.id);
   if (!account) return res.status(404).json({ error: "Account not found" });
 
-  const { code, name, description, active } = req.body ?? {};
+  const { code, name, description, active, cashFlowCategory } = req.body ?? {};
   if (code && code !== account.code && db.accounts.some((a) => a.code === code && a.id !== account.id)) {
     return res.status(409).json({ error: `Account code ${code} already exists` });
   }
@@ -49,6 +54,9 @@ router.put("/:id", async (req, res) => {
   if (name !== undefined) account.name = String(name);
   if (description !== undefined) account.description = String(description);
   if (active !== undefined) account.active = Boolean(active);
+  if (cashFlowCategory !== undefined && VALID_CASH_FLOW_CATEGORIES.includes(cashFlowCategory)) {
+    account.cashFlowCategory = cashFlowCategory;
+  }
 
   await writeDatabase(db);
   res.json(account);

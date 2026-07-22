@@ -1,5 +1,6 @@
 export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expense";
 export type NormalBalance = "debit" | "credit";
+export type CashFlowCategory = "operating" | "investing" | "financing";
 
 export interface Account {
   id: string;
@@ -11,6 +12,7 @@ export interface Account {
   active: boolean;
   isSystem: boolean;
   createdAt: string;
+  cashFlowCategory: CashFlowCategory;
 }
 
 export interface JournalLine {
@@ -90,4 +92,29 @@ export interface BalanceSheetResponse {
   totalEquity: number;
   totalLiabilitiesAndEquity: number;
   balanced: boolean;
+}
+
+export interface CashFlowRow {
+  account: Account;
+  amount: number;
+}
+
+export interface CashFlowResponse {
+  start: string | null;
+  end: string | null;
+  operatingRows: CashFlowRow[];
+  investingRows: CashFlowRow[];
+  financingRows: CashFlowRow[];
+  totalOperating: number;
+  totalInvesting: number;
+  totalFinancing: number;
+  netChangeInCash: number;
+  beginningCash: number;
+  endingCash: number;
+  reconciled: boolean;
+}
+
+export interface ClosedPeriod {
+  period: string;
+  closedAt: string;
 }

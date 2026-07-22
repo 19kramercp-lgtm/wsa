@@ -1,6 +1,8 @@
 import type {
   Account,
   BalanceSheetResponse,
+  CashFlowResponse,
+  ClosedPeriod,
   IncomeStatementResponse,
   JournalEntry,
   LedgerResponse,
@@ -83,5 +85,15 @@ export const api = {
     },
     balanceSheet: (asOf?: string) =>
       request<BalanceSheetResponse>(`/reports/balance-sheet${asOf ? `?asOf=${asOf}` : ""}`),
+    cashFlow: (start?: string, end?: string) => {
+      const qs = new URLSearchParams({ ...(start ? { start } : {}), ...(end ? { end } : {}) }).toString();
+      return request<CashFlowResponse>(`/reports/cash-flow${qs ? `?${qs}` : ""}`);
+    },
+  },
+  periods: {
+    list: () => request<ClosedPeriod[]>("/periods"),
+    close: (period: string) =>
+      request<ClosedPeriod>("/periods/close", { method: "POST", body: JSON.stringify({ period }) }),
+    reopen: (period: string) => request<void>("/periods/reopen", { method: "POST", body: JSON.stringify({ period }) }),
   },
 };
