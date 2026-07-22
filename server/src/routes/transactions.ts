@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { isPeriodClosed, readDatabase, writeDatabase } from "../db.js";
+import { fullName, isPeriodClosed, readDatabase, writeDatabase } from "../db.js";
 import type { JournalEntry } from "../types.js";
 
 const router = Router();
@@ -41,7 +41,7 @@ router.post("/revenue", async (req, res) => {
   }
 
   const now = new Date().toISOString();
-  const memo = description || `Revenue: ${revenueAccount.name} — ${client.name}`;
+  const memo = description || `Revenue: ${revenueAccount.name} — ${fullName(client)}`;
   const entry: JournalEntry = {
     id: uuidv4(),
     date: String(date),
@@ -88,7 +88,7 @@ router.post("/expense", async (req, res) => {
   }
 
   const now = new Date().toISOString();
-  const memo = description || `Expense: ${expenseAccount.name} — ${client.name}`;
+  const memo = description || `Expense: ${expenseAccount.name} — ${fullName(client)}`;
   const entry: JournalEntry = {
     id: uuidv4(),
     date: String(date),

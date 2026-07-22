@@ -2,18 +2,31 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { EditIcon, PlusIcon, TrashIcon } from "../components/Icons";
-import { formatDate } from "../utils/format";
+import { clientAddress, formatDate, fullName } from "../utils/format";
 import type { Client } from "../types";
 
 interface ClientFormState {
   id?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
 }
 
-const emptyClientForm: ClientFormState = { name: "", phone: "", email: "", address: "" };
+const emptyClientForm: ClientFormState = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+};
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -55,12 +68,22 @@ export default function Clients() {
   }
 
   function startEdit(c: Client) {
-    setForm({ id: c.id, name: c.name, phone: c.phone, email: c.email, address: c.address });
+    setForm({
+      id: c.id,
+      firstName: c.firstName,
+      lastName: c.lastName,
+      phone: c.phone,
+      email: c.email,
+      street: c.street,
+      city: c.city,
+      state: c.state,
+      zip: c.zip,
+    });
     setShowForm(true);
   }
 
   async function remove(c: Client) {
-    if (!confirm(`Delete client ${c.name}? This cannot be undone.`)) return;
+    if (!confirm(`Delete client ${fullName(c)}? This cannot be undone.`)) return;
     setError(null);
     try {
       await api.clients.remove(c.id);
@@ -70,7 +93,7 @@ export default function Clients() {
     }
   }
 
-  const sorted = [...clients].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b)));
 
   return (
     <div>
@@ -97,43 +120,81 @@ export default function Clients() {
 
       {showForm && (
         <Card className="p-5 mb-6">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Client Name">
-              <input
-                className={inputClass}
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Jane Smith"
-                required
-              />
-            </Field>
-            <Field label="Phone Number">
-              <input
-                type="tel"
-                className={inputClass}
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="e.g. (555) 123-4567"
-              />
-            </Field>
-            <Field label="Email Address">
-              <input
-                type="email"
-                className={inputClass}
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="e.g. jane@example.com"
-              />
-            </Field>
-            <Field label="Home Address">
-              <input
-                className={inputClass}
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="e.g. 123 Main St, Anytown, ST 12345"
-              />
-            </Field>
-            <div className="sm:col-span-2 flex gap-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="First Name">
+                <input
+                  className={inputClass}
+                  value={form.firstName}
+                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                  placeholder="e.g. Jane"
+                  required
+                />
+              </Field>
+              <Field label="Last Name">
+                <input
+                  className={inputClass}
+                  value={form.lastName}
+                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                  placeholder="e.g. Smith"
+                />
+              </Field>
+              <Field label="Phone Number">
+                <input
+                  type="tel"
+                  className={inputClass}
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="e.g. (555) 123-4567"
+                />
+              </Field>
+              <Field label="Email Address">
+                <input
+                  type="email"
+                  className={inputClass}
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="e.g. jane@example.com"
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Street Address">
+                <input
+                  className={inputClass}
+                  value={form.street}
+                  onChange={(e) => setForm({ ...form, street: e.target.value })}
+                  placeholder="e.g. 123 Main St"
+                />
+              </Field>
+              <Field label="City">
+                <input
+                  className={inputClass}
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  placeholder="e.g. Anytown"
+                />
+              </Field>
+              <Field label="State">
+                <input
+                  className={inputClass}
+                  value={form.state}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                  placeholder="e.g. CA"
+                />
+              </Field>
+              <Field label="Zip Code">
+                <input
+                  className={inputClass}
+                  value={form.zip}
+                  onChange={(e) => setForm({ ...form, zip: e.target.value })}
+                  placeholder="e.g. 90210"
+                />
+              </Field>
+            </div>
+
+            <div className="flex gap-2">
               <Button type="submit" disabled={saving}>
                 {form.id ? "Save Changes" : "Create Client"}
               </Button>
@@ -173,10 +234,10 @@ export default function Clients() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {sorted.map((c) => (
                   <tr key={c.id}>
-                    <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{c.name}</td>
+                    <td className="px-5 py-2.5 font-medium text-slate-800 dark:text-slate-100">{fullName(c)}</td>
                     <td className="px-5 py-2.5 text-slate-500">{c.phone || "—"}</td>
                     <td className="px-5 py-2.5 text-slate-500">{c.email || "—"}</td>
-                    <td className="px-5 py-2.5 text-slate-500 hidden md:table-cell">{c.address || "—"}</td>
+                    <td className="px-5 py-2.5 text-slate-500 hidden md:table-cell">{clientAddress(c) || "—"}</td>
                     <td className="px-5 py-2.5 text-slate-500 hidden lg:table-cell">{formatDate(c.createdAt.slice(0, 10))}</td>
                     <td className="px-5 py-2.5">
                       <div className="flex justify-end gap-1">

@@ -46,10 +46,14 @@ export interface ClosedPeriod {
 
 export interface Client {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   phone: string;
   email: string;
-  address: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
   createdAt: string;
 }
 

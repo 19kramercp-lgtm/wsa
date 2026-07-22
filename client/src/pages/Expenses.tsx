@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
-import { formatCurrency, formatDate, todayISO } from "../utils/format";
+import { formatCurrency, formatDate, fullName, todayISO } from "../utils/format";
 import { isDateInClosedPeriod, periodLabel } from "../utils/period";
 import { useClosedPeriods } from "../utils/useClosedPeriods";
 import { useClients } from "../utils/useClients";
@@ -38,7 +38,7 @@ export default function Expenses() {
   );
   const accountById = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
-  const sortedClients = useMemo(() => [...clients].sort((a, b) => a.name.localeCompare(b.name)), [clients]);
+  const sortedClients = useMemo(() => [...clients].sort((a, b) => fullName(a).localeCompare(fullName(b))), [clients]);
 
   function load() {
     setLoading(true);
@@ -145,7 +145,7 @@ export default function Expenses() {
               <option value="">Select client…</option>
               {sortedClients.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {fullName(c)}
                 </option>
               ))}
             </select>
@@ -224,7 +224,9 @@ export default function Expenses() {
                     <tr key={e.id}>
                       <td className="px-5 py-2.5 text-slate-500">{formatDate(e.date)}</td>
                       <td className="px-5 py-2.5 text-slate-700 dark:text-slate-200">{e.memo}</td>
-                      <td className="px-5 py-2.5 text-slate-500">{e.clientId ? clientById.get(e.clientId)?.name ?? "—" : "—"}</td>
+                      <td className="px-5 py-2.5 text-slate-500">
+                        {e.clientId && clientById.get(e.clientId) ? fullName(clientById.get(e.clientId)!) : "—"}
+                      </td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(expLine?.accountId ?? "")?.name}</td>
                       <td className="px-5 py-2.5 text-slate-500">{accountById.get(payLine?.accountId ?? "")?.name}</td>
                       <td className="px-5 py-2.5 text-right font-medium text-red-600">

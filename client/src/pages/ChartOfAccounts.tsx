@@ -274,16 +274,16 @@ export default function ChartOfAccounts() {
                   <h2 className="font-semibold text-slate-800 dark:text-slate-100">{TYPE_LABELS[type]}</h2>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm table-fixed min-w-[720px]">
                     <thead>
                       <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                        <th className="px-5 py-2 font-medium">Code</th>
+                        <th className="px-5 py-2 font-medium w-20">Code</th>
                         <th className="px-5 py-2 font-medium">Name</th>
                         <th className="px-5 py-2 font-medium hidden md:table-cell">Description</th>
-                        <th className="px-5 py-2 font-medium">Normal Bal.</th>
-                        <th className="px-5 py-2 font-medium hidden lg:table-cell">Cash Flow</th>
-                        <th className="px-5 py-2 font-medium">Status</th>
-                        <th className="px-5 py-2 font-medium text-right">Actions</th>
+                        <th className="px-5 py-2 font-medium w-28">Normal Bal.</th>
+                        <th className="px-5 py-2 font-medium hidden lg:table-cell w-28">Cash Flow</th>
+                        <th className="px-5 py-2 font-medium w-24">Status</th>
+                        <th className="px-5 py-2 font-medium text-right w-44">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

@@ -129,6 +129,22 @@ function migrate(db: Database): Database {
   for (const entry of db.journalEntries) {
     if (entry.clientId === undefined) entry.clientId = null;
   }
+  for (const client of db.clients as unknown as Record<string, unknown>[]) {
+    if (typeof client.firstName !== "string") {
+      const legacyName = typeof client.name === "string" ? client.name.trim() : "";
+      const spaceIndex = legacyName.indexOf(" ");
+      client.firstName = spaceIndex === -1 ? legacyName : legacyName.slice(0, spaceIndex);
+      client.lastName = spaceIndex === -1 ? "" : legacyName.slice(spaceIndex + 1);
+      delete client.name;
+    }
+    if (typeof client.street !== "string") {
+      client.street = typeof client.address === "string" ? client.address : "";
+      client.city = "";
+      client.state = "";
+      client.zip = "";
+      delete client.address;
+    }
+  }
   return db;
 }
 
@@ -162,6 +178,10 @@ export async function writeDatabase(db: Database): Promise<void> {
 export function isPeriodClosed(date: string, closedPeriods: ClosedPeriod[]): boolean {
   const period = date.slice(0, 7);
   return closedPeriods.some((cp) => cp.period === period);
+}
+
+export function fullName(client: { firstName: string; lastName: string }): string {
+  return `${client.firstName} ${client.lastName}`.trim();
 }
 
 export { DATA_FILE };

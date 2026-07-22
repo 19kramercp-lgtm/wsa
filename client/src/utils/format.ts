@@ -20,3 +20,12 @@ export function todayISO(): string {
 export function accountTypeLabel(type: string): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
+
+export function fullName(client: { firstName: string; lastName: string }): string {
+  return `${client.firstName} ${client.lastName}`.trim();
+}
+
+export function clientAddress(client: { street: string; city: string; state: string; zip: string }): string {
+  const cityStateZip = [client.city, [client.state, client.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  return [client.street, cityStateZip].filter(Boolean).join(", ");
+}

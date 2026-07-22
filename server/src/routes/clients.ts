@@ -1,28 +1,32 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { readDatabase, writeDatabase } from "../db.js";
+import { fullName, readDatabase, writeDatabase } from "../db.js";
 import type { Client } from "../types.js";
 
 const router = Router();
 
 router.get("/", async (_req, res) => {
   const db = await readDatabase();
-  const sorted = [...db.clients].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted = [...db.clients].sort((a, b) => fullName(a).localeCompare(fullName(b)));
   res.json(sorted);
 });
 
 router.post("/", async (req, res) => {
-  const { name, phone, email, address } = req.body ?? {};
-  if (!name || !String(name).trim()) {
-    return res.status(400).json({ error: "name is required" });
+  const { firstName, lastName, phone, email, street, city, state, zip } = req.body ?? {};
+  if (!firstName || !String(firstName).trim()) {
+    return res.status(400).json({ error: "firstName is required" });
   }
   const db = await readDatabase();
   const client: Client = {
     id: uuidv4(),
-    name: String(name).trim(),
+    firstName: String(firstName).trim(),
+    lastName: lastName ? String(lastName).trim() : "",
     phone: phone ?? "",
     email: email ?? "",
-    address: address ?? "",
+    street: street ?? "",
+    city: city ?? "",
+    state: state ?? "",
+    zip: zip ?? "",
     createdAt: new Date().toISOString(),
   };
   db.clients.push(client);
@@ -35,14 +39,18 @@ router.put("/:id", async (req, res) => {
   const client = db.clients.find((c) => c.id === req.params.id);
   if (!client) return res.status(404).json({ error: "Client not found" });
 
-  const { name, phone, email, address } = req.body ?? {};
-  if (name !== undefined) {
-    if (!String(name).trim()) return res.status(400).json({ error: "name cannot be empty" });
-    client.name = String(name).trim();
+  const { firstName, lastName, phone, email, street, city, state, zip } = req.body ?? {};
+  if (firstName !== undefined) {
+    if (!String(firstName).trim()) return res.status(400).json({ error: "firstName cannot be empty" });
+    client.firstName = String(firstName).trim();
   }
+  if (lastName !== undefined) client.lastName = String(lastName).trim();
   if (phone !== undefined) client.phone = String(phone);
   if (email !== undefined) client.email = String(email);
-  if (address !== undefined) client.address = String(address);
+  if (street !== undefined) client.street = String(street);
+  if (city !== undefined) client.city = String(city);
+  if (state !== undefined) client.state = String(state);
+  if (zip !== undefined) client.zip = String(zip);
 
   await writeDatabase(db);
   res.json(client);
