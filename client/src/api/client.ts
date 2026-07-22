@@ -8,6 +8,7 @@ import type {
   IncomeStatementResponse,
   JournalEntry,
   LedgerResponse,
+  RevenueByClientResponse,
   TrialBalanceResponse,
 } from "../types";
 
@@ -93,6 +94,10 @@ export const api = {
     },
     agedReceivables: (asOf?: string) =>
       request<AgedReceivablesResponse>(`/reports/aged-receivables${asOf ? `?asOf=${asOf}` : ""}`),
+    revenueByClient: (start?: string, end?: string) => {
+      const qs = new URLSearchParams({ ...(start ? { start } : {}), ...(end ? { end } : {}) }).toString();
+      return request<RevenueByClientResponse>(`/reports/revenue-by-client${qs ? `?${qs}` : ""}`);
+    },
   },
   periods: {
     list: () => request<ClosedPeriod[]>("/periods"),

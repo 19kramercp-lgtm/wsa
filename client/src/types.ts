@@ -153,3 +153,15 @@ export interface AgedReceivablesResponse {
     total: number;
   };
 }
+
+export interface RevenueByClientRow {
+  client: Client | null;
+  amount: number;
+}
+
+export interface RevenueByClientResponse {
+  start: string | null;
+  end: string | null;
+  rows: RevenueByClientRow[];
+  totalRevenue: number;
+}

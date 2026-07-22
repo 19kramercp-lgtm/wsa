@@ -6,10 +6,6 @@ import { formatCurrency, formatDate, todayISO } from "../utils/format";
 import type { Account, IncomeStatementResponse, JournalEntry } from "../types";
 import { ExpenseIcon, RevenueIcon } from "../components/Icons";
 
-function startOfMonthISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
 function startOfYearISO(): string {
   return `${new Date().getFullYear()}-01-01`;
 }
@@ -17,23 +13,16 @@ function startOfYearISO(): string {
 export default function Dashboard() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [mtd, setMtd] = useState<IncomeStatementResponse | null>(null);
   const [ytd, setYtd] = useState<IncomeStatementResponse | null>(null);
   const [cashBalance, setCashBalance] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.accounts.list(),
-      api.journal.list(),
-      api.reports.incomeStatement(startOfMonthISO(), todayISO()),
-      api.reports.incomeStatement(startOfYearISO(), todayISO()),
-    ])
-      .then(async ([acc, je, mtdRes, ytdRes]) => {
+    Promise.all([api.accounts.list(), api.journal.list(), api.reports.incomeStatement(startOfYearISO(), todayISO())])
+      .then(async ([acc, je, ytdRes]) => {
         setAccounts(acc);
         setEntries(je);
-        setMtd(mtdRes);
         setYtd(ytdRes);
         const cashAccounts = acc.filter((a) => a.type === "asset" && /cash/i.test(a.name));
         const ledgers = await Promise.all(cashAccounts.map((a) => api.ledger.get(a.id)));
@@ -78,8 +67,8 @@ export default function Dashboard() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Revenue (MTD)" value={formatCurrency(mtd?.totalRevenue ?? 0)} tone="emerald" />
-        <StatCard label="Expenses (MTD)" value={formatCurrency(mtd?.totalExpenses ?? 0)} tone="red" />
+        <StatCard label="Revenue (YTD)" value={formatCurrency(ytd?.totalRevenue ?? 0)} tone="emerald" />
+        <StatCard label="Expenses (YTD)" value={formatCurrency(ytd?.totalExpenses ?? 0)} tone="red" />
         <StatCard label="Net Income (YTD)" value={formatCurrency(ytd?.netIncome ?? 0)} tone="blue" />
         <StatCard label="Cash on Hand" value={formatCurrency(cashBalance)} tone="slate" />
       </div>

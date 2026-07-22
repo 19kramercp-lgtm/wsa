@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { Card, Field, PageHeader, inputClass } from "../components/ui";
 import { formatCurrency, formatDate } from "../utils/format";
+import { currentPeriod, monthBounds } from "../utils/period";
 import type { Account, LedgerResponse } from "../types";
+
+const defaultRange = monthBounds(currentPeriod());
 
 export default function GeneralLedger() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [start, setStart] = useState(defaultRange.start);
+  const [end, setEnd] = useState(defaultRange.end);
   const [ledger, setLedger] = useState<LedgerResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

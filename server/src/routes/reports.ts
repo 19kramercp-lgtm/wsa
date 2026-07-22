@@ -303,4 +303,45 @@ router.get("/aged-receivables", async (req, res) => {
   res.json({ asOf: asOfStr, rows, totals });
 });
 
+// Revenue per client for a date range. Attributes each revenue-account
+// line to the journal entry's tagged client (if any); entries without a
+// client are grouped under "Unassigned" so the totals still reconcile with
+// the Income Statement's total revenue for the same period.
+router.get("/revenue-by-client", async (req, res) => {
+  const db = await readDatabase();
+  const { start, end } = req.query;
+  const startStr = start ? String(start) : null;
+  const endStr = end ? String(end) : null;
+
+  const revenueAccountIds = new Set(db.accounts.filter((a) => a.type === "revenue").map((a) => a.id));
+
+  const entries = db.journalEntries
+    .filter((e) => (startStr ? e.date >= startStr : true))
+    .filter((e) => (endStr ? e.date <= endStr : true));
+
+  const amountByClient = new Map<string | null, number>();
+
+  for (const entry of entries) {
+    const revenueAmount = round2(
+      entry.lines.reduce((sum, l) => (revenueAccountIds.has(l.accountId) ? sum + l.credit - l.debit : sum), 0)
+    );
+    if (revenueAmount === 0) continue;
+    const key = entry.clientId ?? null;
+    amountByClient.set(key, round2((amountByClient.get(key) ?? 0) + revenueAmount));
+  }
+
+  const rows = [];
+  for (const [clientId, amount] of amountByClient) {
+    if (amount === 0) continue;
+    const client = clientId ? db.clients.find((c) => c.id === clientId) ?? null : null;
+    rows.push({ client, amount });
+  }
+
+  rows.sort((a, b) => b.amount - a.amount);
+
+  const totalRevenue = round2(rows.reduce((sum, r) => sum + r.amount, 0));
+
+  res.json({ start: startStr, end: endStr, rows, totalRevenue });
+});
+
 export default router;

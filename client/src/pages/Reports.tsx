@@ -9,10 +9,11 @@ import type {
   CashFlowResponse,
   ClosedPeriod,
   IncomeStatementResponse,
+  RevenueByClientResponse,
   TrialBalanceResponse,
 } from "../types";
 
-type Tab = "trial-balance" | "income-statement" | "balance-sheet" | "cash-flow" | "aged-receivables";
+type Tab = "trial-balance" | "income-statement" | "balance-sheet" | "cash-flow" | "aged-receivables" | "revenue-by-client";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "trial-balance", label: "Trial Balance" },
@@ -20,6 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "balance-sheet", label: "Balance Sheet" },
   { id: "cash-flow", label: "Cash Flow" },
   { id: "aged-receivables", label: "Aged Receivables" },
+  { id: "revenue-by-client", label: "Revenue by Client" },
 ];
 
 export default function Reports() {
@@ -73,6 +75,7 @@ export default function Reports() {
       {tab === "balance-sheet" && <BalanceSheetTab asOf={end} />}
       {tab === "cash-flow" && <CashFlowTab start={start} end={end} />}
       {tab === "aged-receivables" && <AgedReceivablesTab asOf={end} />}
+      {tab === "revenue-by-client" && <RevenueByClientTab start={start} end={end} />}
     </div>
   );
 }
@@ -522,6 +525,59 @@ function AgedReceivablesTab({ asOf }: { asOf: string }) {
                 <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.days61to90)}</td>
                 <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.over90)}</td>
                 <td className="px-5 py-2.5 text-right">{formatCurrency(data.totals.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function RevenueByClientTab({ start, end }: { start: string; end: string }) {
+  const [data, setData] = useState<RevenueByClientResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    api.reports.revenueByClient(start, end).then(setData).finally(() => setLoading(false));
+  }, [start, end]);
+
+  if (loading || !data) return <p className="text-sm text-slate-500">Loading…</p>;
+
+  return (
+    <Card>
+      <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <h2 className="font-semibold text-slate-800 dark:text-slate-100">Revenue by Client</h2>
+        <span className="text-sm font-medium text-emerald-600">{formatCurrency(data.totalRevenue)} total</span>
+      </div>
+      {data.rows.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-slate-400">No revenue recorded in this period.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-5 py-2 font-medium">Client</th>
+                <th className="px-5 py-2 font-medium text-right">Revenue</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {data.rows.map((r) => (
+                <tr key={r.client?.id ?? "unassigned"}>
+                  <td className="px-5 py-2.5 text-slate-700 dark:text-slate-200">
+                    {r.client ? fullName(r.client) : <span className="text-slate-400 italic">Unassigned</span>}
+                  </td>
+                  <td className="px-5 py-2.5 text-right font-medium text-slate-800 dark:text-slate-100">
+                    {formatCurrency(r.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-100">
+                <td className="px-5 py-2.5">Total</td>
+                <td className="px-5 py-2.5 text-right">{formatCurrency(data.totalRevenue)}</td>
               </tr>
             </tfoot>
           </table>
