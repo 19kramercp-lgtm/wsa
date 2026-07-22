@@ -1,0 +1,93 @@
+export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expense";
+export type NormalBalance = "debit" | "credit";
+
+export interface Account {
+  id: string;
+  code: string;
+  name: string;
+  type: AccountType;
+  normalBalance: NormalBalance;
+  description: string;
+  active: boolean;
+  isSystem: boolean;
+  createdAt: string;
+}
+
+export interface JournalLine {
+  id: string;
+  accountId: string;
+  debit: number;
+  credit: number;
+  description: string;
+}
+
+export type JournalSource = "manual" | "revenue" | "expense";
+
+export interface JournalEntry {
+  id: string;
+  date: string;
+  memo: string;
+  reference: string;
+  source: JournalSource;
+  lines: JournalLine[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LedgerRow {
+  journalEntryId: string;
+  date: string;
+  reference: string;
+  memo: string;
+  source: JournalSource;
+  debit: number;
+  credit: number;
+  balance: number;
+}
+
+export interface LedgerResponse {
+  account: Account;
+  rows: LedgerRow[];
+}
+
+export interface TrialBalanceRow {
+  account: Account;
+  debit: number;
+  credit: number;
+}
+
+export interface TrialBalanceResponse {
+  asOf: string | null;
+  rows: TrialBalanceRow[];
+  totalDebit: number;
+  totalCredit: number;
+  balanced: boolean;
+}
+
+export interface IncomeStatementRow {
+  account: Account;
+  amount: number;
+}
+
+export interface IncomeStatementResponse {
+  start: string | null;
+  end: string | null;
+  revenueRows: IncomeStatementRow[];
+  expenseRows: IncomeStatementRow[];
+  totalRevenue: number;
+  totalExpenses: number;
+  netIncome: number;
+}
+
+export interface BalanceSheetResponse {
+  asOf: string | null;
+  assetRows: IncomeStatementRow[];
+  liabilityRows: IncomeStatementRow[];
+  equityRows: IncomeStatementRow[];
+  netIncomeToDate: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  totalLiabilitiesAndEquity: number;
+  balanced: boolean;
+}
