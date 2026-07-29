@@ -18,6 +18,7 @@ import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
 import TrainingMaterials from "./pages/TrainingMaterials";
 import TrainingCalendar from "./pages/TrainingCalendar";
+import Aircraft from "./pages/Aircraft";
 import UserAccounts from "./pages/UserAccounts";
 
 const ADMIN: ["administrator"] = ["administrator"];
@@ -129,6 +130,7 @@ function App() {
             <Route path="training/students/:clientId" element={<StudentProfile />} />
             <Route path="training/materials" element={<TrainingMaterials />} />
             <Route path="training/calendar" element={<TrainingCalendar />} />
+            <Route path="training/aircraft" element={<Aircraft />} />
           </Route>
         </Routes>
       </AuthProvider>

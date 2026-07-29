@@ -47,7 +47,8 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const isFormData = options?.body instanceof FormData;
+  const headers: Record<string, string> = isFormData ? {} : { "Content-Type": "application/json" };
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
   const res = await fetch(`${BASE}${path}`, {
     headers,
@@ -68,6 +69,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+async function downloadFile(path: string, filename: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  const res = await fetch(`${BASE}${path}`, { headers });
+  if (!res.ok) throw new Error("Download failed");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export const api = {
@@ -210,11 +225,35 @@ export const api = {
   trainingMaterials: {
     list: (category?: string) =>
       request<TrainingMaterial[]>(`/training-materials${category ? `?category=${category}` : ""}`),
-    create: (data: Partial<TrainingMaterial>) =>
-      request<TrainingMaterial>("/training-materials", { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<TrainingMaterial>) =>
-      request<TrainingMaterial>(`/training-materials/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    create: (
+      data: { title: string; category: string; description?: string; url?: string },
+      file?: File | null
+    ) => {
+      const form = new FormData();
+      form.set("title", data.title);
+      form.set("category", data.category);
+      form.set("description", data.description ?? "");
+      form.set("url", data.url ?? "");
+      if (file) form.set("file", file);
+      return request<TrainingMaterial>("/training-materials", { method: "POST", body: form });
+    },
+    update: (
+      id: string,
+      data: { title?: string; category?: string; description?: string; url?: string },
+      file?: File | null,
+      removeFile?: boolean
+    ) => {
+      const form = new FormData();
+      if (data.title !== undefined) form.set("title", data.title);
+      if (data.category !== undefined) form.set("category", data.category);
+      if (data.description !== undefined) form.set("description", data.description);
+      if (data.url !== undefined) form.set("url", data.url);
+      if (file) form.set("file", file);
+      if (removeFile) form.set("removeFile", "true");
+      return request<TrainingMaterial>(`/training-materials/${id}`, { method: "PUT", body: form });
+    },
     remove: (id: string) => request<void>(`/training-materials/${id}`, { method: "DELETE" }),
+    download: (id: string, filename: string) => downloadFile(`/training-materials/${id}/file`, filename),
   },
   calendar: {
     list: (params?: { start?: string; end?: string }) => {
@@ -230,6 +269,8 @@ export const api = {
   aircraft: {
     list: () => request<Aircraft[]>("/aircraft"),
     create: (name: string) => request<Aircraft>("/aircraft", { method: "POST", body: JSON.stringify({ name }) }),
+    update: (id: string, data: Partial<Pick<Aircraft, "name" | "active">>) =>
+      request<Aircraft>(`/aircraft/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/aircraft/${id}`, { method: "DELETE" }),
   },
   classrooms: {

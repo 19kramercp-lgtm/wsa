@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { readDatabase, writeDatabase } from "../db.js";
-import type { CalendarEvent, CalendarSessionType } from "../types.js";
+import { fullName, readDatabase, writeDatabase } from "../db.js";
+import type { CalendarEvent, CalendarSessionType, Database } from "../types.js";
 
 const router = Router();
 
@@ -21,6 +21,23 @@ function validateSessionFields(body: Record<string, unknown>): string | null {
   return null;
 }
 
+// The title isn't user-entered — it's derived from the student, session
+// type, and aircraft/classroom so it always reflects the event's current
+// details.
+function generateTitle(
+  db: Database,
+  params: { sessionType: CalendarSessionType; studentClientId: string; aircraftId: string | null; classroomId: string | null }
+): string {
+  const student = db.clients.find((c) => c.id === params.studentClientId);
+  const studentName = student ? fullName(student) : "Unknown Student";
+  const sessionLabel = params.sessionType === "flight" ? "Flight" : "Ground";
+  const resourceName =
+    params.sessionType === "flight"
+      ? db.aircraft.find((a) => a.id === params.aircraftId)?.name
+      : db.classrooms.find((c) => c.id === params.classroomId)?.name;
+  return resourceName ? `${studentName} — ${sessionLabel} (${resourceName})` : `${studentName} — ${sessionLabel}`;
+}
+
 router.get("/", async (req, res) => {
   const db = await readDatabase();
   const { start, end } = req.query;
@@ -33,9 +50,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const body = req.body ?? {};
-  const { title, date, startTime, endTime, sessionType, aircraftId, classroomId, studentClientId, instructorName, notes } =
-    body;
-  if (!title || !String(title).trim()) return res.status(400).json({ error: "Title is required" });
+  const { date, startTime, endTime, sessionType, aircraftId, classroomId, studentClientId, instructorName } = body;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     return res.status(400).json({ error: "A valid date (YYYY-MM-DD) is required" });
   }
@@ -58,18 +73,24 @@ router.post("/", async (req, res) => {
   }
 
   const now = new Date().toISOString();
+  const resolvedAircraftId = sessionType === "flight" ? aircraftId : null;
+  const resolvedClassroomId = sessionType === "ground" ? classroomId : null;
   const event: CalendarEvent = {
     id: uuidv4(),
-    title: String(title).trim(),
+    title: generateTitle(db, {
+      sessionType,
+      studentClientId: String(studentClientId),
+      aircraftId: resolvedAircraftId,
+      classroomId: resolvedClassroomId,
+    }),
     date: String(date),
     startTime: String(startTime),
     endTime: String(endTime),
     sessionType,
-    aircraftId: sessionType === "flight" ? aircraftId : null,
-    classroomId: sessionType === "ground" ? classroomId : null,
+    aircraftId: resolvedAircraftId,
+    classroomId: resolvedClassroomId,
     studentClientId: String(studentClientId),
     instructorName: String(instructorName).trim(),
-    notes: notes ?? "",
     createdAt: now,
     updatedAt: now,
   };
@@ -84,8 +105,7 @@ router.put("/:id", async (req, res) => {
   if (!event) return res.status(404).json({ error: "Event not found" });
 
   const body = req.body ?? {};
-  const { title, date, startTime, endTime, sessionType, aircraftId, classroomId, studentClientId, instructorName, notes } =
-    body;
+  const { date, startTime, endTime, sessionType, aircraftId, classroomId, studentClientId, instructorName } = body;
 
   const nextSessionType: CalendarSessionType = sessionType !== undefined ? sessionType : event.sessionType;
   const nextAircraftId = aircraftId !== undefined ? aircraftId : event.aircraftId;
@@ -97,10 +117,6 @@ router.put("/:id", async (req, res) => {
   });
   if (sessionError) return res.status(400).json({ error: sessionError });
 
-  if (title !== undefined) {
-    if (!String(title).trim()) return res.status(400).json({ error: "Title cannot be empty" });
-    event.title = String(title).trim();
-  }
   if (date !== undefined) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
       return res.status(400).json({ error: "A valid date (YYYY-MM-DD) is required" });
@@ -115,6 +131,7 @@ router.put("/:id", async (req, res) => {
     if (!String(endTime)) return res.status(400).json({ error: "End time is required" });
     event.endTime = String(endTime);
   }
+  const nextStudentClientId = studentClientId !== undefined ? studentClientId : event.studentClientId;
   if (studentClientId !== undefined) {
     if (!studentClientId) return res.status(400).json({ error: "Student is required" });
     if (!db.clients.some((c) => c.id === studentClientId)) return res.status(400).json({ error: "Student not found" });
@@ -133,7 +150,12 @@ router.put("/:id", async (req, res) => {
   event.sessionType = nextSessionType;
   event.aircraftId = nextSessionType === "flight" ? nextAircraftId : null;
   event.classroomId = nextSessionType === "ground" ? nextClassroomId : null;
-  if (notes !== undefined) event.notes = String(notes);
+  event.title = generateTitle(db, {
+    sessionType: nextSessionType,
+    studentClientId: String(nextStudentClientId),
+    aircraftId: event.aircraftId,
+    classroomId: event.classroomId,
+  });
   event.updatedAt = new Date().toISOString();
 
   await writeDatabase(db);

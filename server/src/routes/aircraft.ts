@@ -18,11 +18,28 @@ router.post("/", async (req, res) => {
   const aircraft: Aircraft = {
     id: uuidv4(),
     name: String(name).trim(),
+    active: true,
     createdAt: new Date().toISOString(),
   };
   db.aircraft.push(aircraft);
   await writeDatabase(db);
   res.status(201).json(aircraft);
+});
+
+router.put("/:id", async (req, res) => {
+  const db = await readDatabase();
+  const aircraft = db.aircraft.find((a) => a.id === req.params.id);
+  if (!aircraft) return res.status(404).json({ error: "Aircraft not found" });
+
+  const { name, active } = req.body ?? {};
+  if (name !== undefined) {
+    if (!String(name).trim()) return res.status(400).json({ error: "Name cannot be empty" });
+    aircraft.name = String(name).trim();
+  }
+  if (active !== undefined) aircraft.active = Boolean(active);
+
+  await writeDatabase(db);
+  res.json(aircraft);
 });
 
 router.delete("/:id", async (req, res) => {

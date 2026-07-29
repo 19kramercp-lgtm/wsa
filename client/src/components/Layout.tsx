@@ -43,6 +43,7 @@ const TRAINING_NAV_ITEMS = [
   { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
   { to: "/training/materials", label: "Training Materials", icon: DocumentIcon },
   { to: "/training/calendar", label: "Calendar", icon: CalendarIcon },
+  { to: "/training/aircraft", label: "Aircraft", icon: PlaneIcon },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

@@ -37,7 +37,6 @@ function buildMonthGrid(monthDate: Date): (Date | null)[][] {
 }
 
 const emptyForm = {
-  title: "",
   startTime: "",
   endTime: "",
   sessionType: "flight" as CalendarSessionType,
@@ -45,7 +44,6 @@ const emptyForm = {
   classroomId: "",
   studentClientId: "",
   instructorName: "",
-  notes: "",
 };
 
 export default function TrainingCalendar() {
@@ -119,7 +117,6 @@ export default function TrainingCalendar() {
     setSelectedDate(ev.date);
     setEditingId(ev.id);
     setForm({
-      title: ev.title,
       startTime: ev.startTime,
       endTime: ev.endTime,
       sessionType: ev.sessionType,
@@ -127,7 +124,6 @@ export default function TrainingCalendar() {
       classroomId: ev.classroomId ?? "",
       studentClientId: ev.studentClientId,
       instructorName: ev.instructorName,
-      notes: ev.notes,
     });
     setShowForm(true);
   }
@@ -345,7 +341,6 @@ export default function TrainingCalendar() {
                             Classroom: {classrooms.find((c) => c.id === ev.classroomId)?.name ?? "Unknown"}
                           </p>
                         )}
-                        {ev.notes && <p className="text-xs text-slate-400 mt-1">{ev.notes}</p>}
                       </div>
                       {canEdit && (
                         <div className="flex gap-1 shrink-0">
@@ -377,18 +372,6 @@ export default function TrainingCalendar() {
       {showForm && canEdit && (
         <Card className="p-5 mt-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Field label="Title">
-                <input
-                  className={inputClass}
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="e.g. Dual instruction — pattern work"
-                  required
-                  autoFocus
-                />
-              </Field>
-            </div>
             <Field label="Date">
               <input
                 type="date"
@@ -396,6 +379,7 @@ export default function TrainingCalendar() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 required
+                autoFocus
               />
             </Field>
             <Field label="Session Type">
@@ -418,7 +402,7 @@ export default function TrainingCalendar() {
                   required
                 >
                   <option value="">Select aircraft…</option>
-                  {aircraft.map((a) => (
+                  {aircraft.filter((a) => a.active || a.id === form.aircraftId).map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                     </option>
@@ -485,15 +469,6 @@ export default function TrainingCalendar() {
                 required
               />
             </Field>
-            <div className="sm:col-span-2">
-              <Field label="Notes (optional)">
-                <input
-                  className={inputClass}
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                />
-              </Field>
-            </div>
             <div className="sm:col-span-2 flex gap-2">
               <Button type="submit" disabled={saving}>
                 {editingId ? "Save Changes" : "Add Event"}

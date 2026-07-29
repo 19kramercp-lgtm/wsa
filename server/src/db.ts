@@ -9,6 +9,7 @@ import type { Account, CashFlowCategory, ClosedPeriod, Database, JournalEntry, R
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR ? process.env.DATA_DIR : path.join(__dirname, "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "wingspan-ledger.json");
+const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
 function seedAccounts(): Account[] {
   const now = new Date().toISOString();
@@ -170,6 +171,16 @@ function migrate(db: Database): boolean {
     if (event.aircraftId === undefined) { event.aircraftId = null; changed = true; }
     if (event.classroomId === undefined) { event.classroomId = null; changed = true; }
     if (typeof event.studentClientId !== "string") { event.studentClientId = event.studentClientId ?? ""; changed = true; }
+    if ("notes" in event) { delete event.notes; changed = true; }
+  }
+  for (const item of db.aircraft as unknown as Record<string, unknown>[]) {
+    if (typeof item.active !== "boolean") { item.active = true; changed = true; }
+  }
+  for (const material of db.trainingMaterials as unknown as Record<string, unknown>[]) {
+    if (material.fileName === undefined) { material.fileName = null; changed = true; }
+    if (material.storedFileName === undefined) { material.storedFileName = null; changed = true; }
+    if (material.fileMimeType === undefined) { material.fileMimeType = null; changed = true; }
+    if (material.fileSize === undefined) { material.fileSize = null; changed = true; }
   }
   for (const endorsement of db.endorsements as unknown as Record<string, unknown>[]) {
     if (typeof endorsement.instructorName !== "string") {
@@ -316,6 +327,7 @@ let writeQueue: Promise<void> = Promise.resolve();
 
 async function ensureDataFile(): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(UPLOADS_DIR, { recursive: true });
   try {
     await fs.access(DATA_FILE);
   } catch {
@@ -354,4 +366,4 @@ export function fullName(client: { firstName: string; lastName: string }): strin
   return `${client.firstName} ${client.lastName}`.trim();
 }
 
-export { DATA_FILE };
+export { DATA_FILE, UPLOADS_DIR };

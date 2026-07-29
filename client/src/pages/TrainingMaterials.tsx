@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
-import { PlusIcon, TrashIcon, EditIcon } from "../components/Icons";
+import { PlusIcon, TrashIcon, EditIcon, DocumentIcon } from "../components/Icons";
 import type { CertificateTrack, TrainingMaterial } from "../types";
 
 const CATEGORIES: { id: CertificateTrack; label: string }[] = [
@@ -13,6 +13,12 @@ const CATEGORIES: { id: CertificateTrack; label: string }[] = [
 ];
 
 const emptyForm = { title: "", description: "", url: "" };
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function TrainingMaterials() {
   const { user } = useAuth();
@@ -26,6 +32,10 @@ export default function TrainingMaterials() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [file, setFile] = useState<File | null>(null);
+  const [existingFileName, setExistingFileName] = useState<string | null>(null);
+  const [removeExistingFile, setRemoveExistingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
     setLoading(true);
@@ -38,15 +48,27 @@ export default function TrainingMaterials() {
 
   useEffect(load, []);
 
+  function resetFileInput() {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function startAdd() {
     setEditingId(null);
     setForm(emptyForm);
+    setFile(null);
+    setExistingFileName(null);
+    setRemoveExistingFile(false);
+    resetFileInput();
     setShowForm(true);
   }
 
   function startEdit(material: TrainingMaterial) {
     setEditingId(material.id);
     setForm({ title: material.title, description: material.description, url: material.url });
+    setFile(null);
+    setExistingFileName(material.fileName);
+    setRemoveExistingFile(false);
+    resetFileInput();
     setShowForm(true);
   }
 
@@ -56,13 +78,15 @@ export default function TrainingMaterials() {
     setSaving(true);
     try {
       if (editingId) {
-        await api.trainingMaterials.update(editingId, { ...form });
+        await api.trainingMaterials.update(editingId, { ...form }, file, removeExistingFile);
       } else {
-        await api.trainingMaterials.create({ ...form, category });
+        await api.trainingMaterials.create({ ...form, category }, file);
       }
       setShowForm(false);
       setForm(emptyForm);
       setEditingId(null);
+      setFile(null);
+      resetFileInput();
       load();
     } catch (err) {
       setError((err as Error).message);
@@ -77,6 +101,15 @@ export default function TrainingMaterials() {
     try {
       await api.trainingMaterials.remove(material.id);
       load();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function downloadFile(material: TrainingMaterial) {
+    if (!material.fileName) return;
+    try {
+      await api.trainingMaterials.download(material.id, material.fileName);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -155,6 +188,41 @@ export default function TrainingMaterials() {
                 />
               </Field>
             </div>
+            <div className="sm:col-span-2">
+              <Field label="File (optional)" hint="Upload a PDF, document, or other file, up to 25 MB">
+                {existingFileName && !removeExistingFile && !file && (
+                  <div className="mb-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <DocumentIcon width={16} height={16} />
+                    <span className="truncate">{existingFileName}</span>
+                    <button
+                      type="button"
+                      className="text-red-600 hover:underline text-xs shrink-0"
+                      onClick={() => setRemoveExistingFile(true)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                {removeExistingFile && (
+                  <div className="mb-2 flex items-center gap-2 text-sm text-slate-400">
+                    <span>File will be removed on save.</span>
+                    <button
+                      type="button"
+                      className="text-brand-600 hover:underline text-xs shrink-0"
+                      onClick={() => setRemoveExistingFile(false)}
+                    >
+                      Undo
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className={`${inputClass} file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:text-white file:px-3 file:py-1.5 file:text-sm file:font-medium`}
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+              </Field>
+            </div>
             <div className="sm:col-span-2 flex gap-2">
               <Button type="submit" disabled={saving}>
                 {editingId ? "Save Changes" : "Add Material"}
@@ -166,6 +234,8 @@ export default function TrainingMaterials() {
                   setShowForm(false);
                   setEditingId(null);
                   setForm(emptyForm);
+                  setFile(null);
+                  resetFileInput();
                 }}
               >
                 Cancel
@@ -203,6 +273,18 @@ export default function TrainingMaterials() {
                   </p>
                   {material.description && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{material.description}</p>
+                  )}
+                  {material.fileName && (
+                    <button
+                      onClick={() => downloadFile(material)}
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-brand-600 hover:underline"
+                    >
+                      <DocumentIcon width={14} height={14} />
+                      {material.fileName}
+                      {material.fileSize != null && (
+                        <span className="text-slate-400">({formatFileSize(material.fileSize)})</span>
+                      )}
+                    </button>
                   )}
                 </div>
                 {canEdit && (

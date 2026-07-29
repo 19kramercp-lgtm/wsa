@@ -298,6 +298,9 @@ export interface TrainingMaterial {
   category: CertificateTrack;
   description: string;
   url: string;
+  fileName: string | null;
+  fileMimeType: string | null;
+  fileSize: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -307,6 +310,7 @@ export type CalendarSessionType = "flight" | "ground";
 export interface Aircraft {
   id: string;
   name: string;
+  active: boolean;
   createdAt: string;
 }
 
@@ -327,7 +331,6 @@ export interface CalendarEvent {
   classroomId: string | null;
   studentClientId: string;
   instructorName: string;
-  notes: string;
   createdAt: string;
   updatedAt: string;
 }
