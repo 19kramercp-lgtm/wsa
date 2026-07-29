@@ -382,6 +382,25 @@ export default function TrainingCalendar() {
                 autoFocus
               />
             </Field>
+            <Field label="Start / End Time">
+              <div className="w-full flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm px-3 py-2 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20">
+                <input
+                  type="time"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
+                  value={form.startTime}
+                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                  required
+                />
+                <span className="text-slate-400">–</span>
+                <input
+                  type="time"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
+                  value={form.endTime}
+                  onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                  required
+                />
+              </div>
+            </Field>
             <Field label="Session Type">
               <select
                 className={inputClass}
@@ -448,24 +467,6 @@ export default function TrainingCalendar() {
                 className={inputClass}
                 value={form.instructorName}
                 onChange={(e) => setForm({ ...form, instructorName: e.target.value })}
-                required
-              />
-            </Field>
-            <Field label="Start Time">
-              <input
-                type="time"
-                className={inputClass}
-                value={form.startTime}
-                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                required
-              />
-            </Field>
-            <Field label="End Time">
-              <input
-                type="time"
-                className={inputClass}
-                value={form.endTime}
-                onChange={(e) => setForm({ ...form, endTime: e.target.value })}
                 required
               />
             </Field>
