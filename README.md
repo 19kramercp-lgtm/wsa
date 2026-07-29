@@ -57,6 +57,27 @@ The file is deliberately excluded from git (see `.gitignore`) since it's
 runtime state, not source code. On first run, the server automatically seeds
 it with a chart of accounts tailored to a flight school (see below).
 
+## Accounts & roles
+
+Every user signs in with an email and password. There are three roles:
+
+- **Administrator** — sees both the Accounting and Training tabs, and can
+  manage user accounts from **User Accounts** (under Accounting).
+- **Instructor** — sees only the Training tab, and can add/edit/delete
+  students' endorsements and requirement checks, training materials, and
+  calendar events.
+- **Student** — sees only the Training tab, view-only (no add/edit/delete
+  controls anywhere in Training).
+
+On first run the server seeds one administrator account:
+
+- Email: `admin@wingspanaviation.test`
+- Password: `wingspan-admin`
+
+Sign in with that account and create instructor/student accounts from
+**User Accounts**. Change the seeded password from there (edit the account)
+once you've signed in.
+
 ## Features
 
 - **Dashboard** — month-to-date revenue/expenses, year-to-date net income,
@@ -86,20 +107,29 @@ it with a chart of accounts tailored to a flight school (see below).
   account activity each period, categorized into Operating / Investing /
   Financing based on each account's `cashFlowCategory` (editable per account
   in the Chart of Accounts; revenue and expenses are always Operating).
+- **Students** — the training-side view of Clients, with FAR 61 requirement
+  checklists and logbook endorsements per certificate track.
+- **Training Materials** — reference material and study links organized into
+  Private, Instrument, Commercial, and CFI categories.
+- **Calendar** — a month-view schedule of lessons and other training events.
 
 ## Project structure
 
 ```
 server/            Express API + file-based JSON storage
   src/
-    db.ts          Read/write the JSON data file, seed chart of accounts
-    routes/         accounts, journal-entries, transactions, ledger, reports
+    db.ts          Read/write the JSON data file, seed chart of accounts + admin account
+    auth.ts         Token signing/verification, requireAuth/requireRole middleware
+    password.ts     Password hashing (scrypt)
+    routes/         accounts, journal-entries, transactions, ledger, reports,
+                    auth, users, training-materials, calendar, ...
   data/             wingspan-ledger.json lives here at runtime
 
 client/            React + Vite + Tailwind app
   src/
-    components/     Layout (hamburger menu/sidebar), shared UI primitives
-    pages/          Dashboard, ChartOfAccounts, GeneralJournal, GeneralLedger,
-                    Revenues, Expenses, Reports
-    api/client.ts   Typed fetch wrapper for the server's REST API
+    context/AuthContext.tsx  Signed-in user, login/logout
+    components/     Layout (role-aware nav), RouteGuards, shared UI primitives
+    pages/          Dashboard, ChartOfAccounts, ..., Login, UserAccounts,
+                    Students, StudentProfile, TrainingMaterials, TrainingCalendar
+    api/client.ts   Typed fetch wrapper for the server's REST API (adds auth token)
 ```

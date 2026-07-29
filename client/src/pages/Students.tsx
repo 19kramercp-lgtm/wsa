@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { Alert, Card, PageHeader } from "../components/ui";
 import { fullName } from "../utils/format";
 import type { Client } from "../types";
 
 export default function Students() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "administrator";
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +28,11 @@ export default function Students() {
     <div>
       <PageHeader
         title="Students"
-        subtitle="Shared with Clients on the Accounting side — add or edit a student's contact info there"
+        subtitle={
+          isAdmin
+            ? "Shared with Clients on the Accounting side — add or edit a student's contact info there"
+            : "Student roster and training records"
+        }
       />
 
       {error && (
@@ -38,11 +45,17 @@ export default function Students() {
         <p className="text-sm text-slate-500">Loading students…</p>
       ) : sorted.length === 0 ? (
         <Card className="p-10 text-center text-sm text-slate-400">
-          No students yet.{" "}
-          <Link to="/clients" className="text-brand-600 hover:underline">
-            Add one in Clients
-          </Link>
-          .
+          {isAdmin ? (
+            <>
+              No students yet.{" "}
+              <Link to="/clients" className="text-brand-600 hover:underline">
+                Add one in Clients
+              </Link>
+              .
+            </>
+          ) : (
+            "No students yet."
+          )}
         </Card>
       ) : (
         <Card>

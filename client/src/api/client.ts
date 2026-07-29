@@ -3,6 +3,7 @@ import type {
   AgedPayablesResponse,
   AgedReceivablesResponse,
   BalanceSheetResponse,
+  CalendarEvent,
   CashFlowResponse,
   Client,
   ClosedPeriod,
@@ -14,18 +15,45 @@ import type {
   LedgerResponse,
   RecurringTransaction,
   RevenueByClientResponse,
+  SafeUser,
   StudentRequirementsResponse,
+  TrainingMaterial,
   TrialBalanceResponse,
   Vendor,
 } from "../types";
 
 const BASE = "/api";
+const TOKEN_STORAGE_KEY = "wsa-token";
+
+let authToken: string | null =
+  typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+let onUnauthorized: (() => void) | null = null;
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
+  if (typeof window === "undefined") return;
+  if (token) window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  else window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...options,
   });
+  if (res.status === 401) {
+    onUnauthorized?.();
+  }
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
@@ -153,5 +181,48 @@ export const api = {
     forStudent: (clientId: string) => request<StudentRequirementsResponse>(`/requirements/${clientId}`),
     setCheck: (clientId: string, requirementId: string, data: { met?: boolean; note?: string; dateMet?: string | null }) =>
       request(`/requirements/${clientId}/${requirementId}`, { method: "PUT", body: JSON.stringify(data) }),
+  },
+  auth: {
+    login: (email: string, password: string) =>
+      request<{ token: string; user: SafeUser }>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      }),
+    me: () => request<SafeUser>("/auth/me"),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      request<{ ok: true }>("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      }),
+  },
+  users: {
+    list: () => request<SafeUser[]>("/users"),
+    create: (data: { name: string; email: string; password: string; role: string; clientId?: string | null }) =>
+      request<SafeUser>("/users", { method: "POST", body: JSON.stringify(data) }),
+    update: (
+      id: string,
+      data: Partial<{ name: string; email: string; password: string; role: string; clientId: string | null }>
+    ) => request<SafeUser>(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/users/${id}`, { method: "DELETE" }),
+  },
+  trainingMaterials: {
+    list: (category?: string) =>
+      request<TrainingMaterial[]>(`/training-materials${category ? `?category=${category}` : ""}`),
+    create: (data: Partial<TrainingMaterial>) =>
+      request<TrainingMaterial>("/training-materials", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<TrainingMaterial>) =>
+      request<TrainingMaterial>(`/training-materials/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/training-materials/${id}`, { method: "DELETE" }),
+  },
+  calendar: {
+    list: (params?: { start?: string; end?: string }) => {
+      const qs = new URLSearchParams(params as Record<string, string>).toString();
+      return request<CalendarEvent[]>(`/calendar${qs ? `?${qs}` : ""}`);
+    },
+    create: (data: Partial<CalendarEvent>) =>
+      request<CalendarEvent>("/calendar", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<CalendarEvent>) =>
+      request<CalendarEvent>(`/calendar/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/calendar/${id}`, { method: "DELETE" }),
   },
 };

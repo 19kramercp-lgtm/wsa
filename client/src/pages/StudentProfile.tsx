@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { TrashIcon } from "../components/Icons";
 import { fullName, formatDate, todayISO } from "../utils/format";
@@ -22,6 +23,8 @@ const CERTIFICATE_LABELS: Record<CertificateTrack, string> = {
 
 export default function StudentProfile() {
   const { clientId } = useParams<{ clientId: string }>();
+  const { user } = useAuth();
+  const canEdit = user?.role === "administrator" || user?.role === "instructor";
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,13 +73,13 @@ export default function StudentProfile() {
         ))}
       </div>
 
-      {tab === "requirements" && <RequirementsTab clientId={clientId} />}
-      {tab === "endorsements" && <EndorsementsTab clientId={clientId} />}
+      {tab === "requirements" && <RequirementsTab clientId={clientId} canEdit={canEdit} />}
+      {tab === "endorsements" && <EndorsementsTab clientId={clientId} canEdit={canEdit} />}
     </div>
   );
 }
 
-function RequirementsTab({ clientId }: { clientId: string }) {
+function RequirementsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
   const [data, setData] = useState<StudentRequirementsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +97,7 @@ function RequirementsTab({ clientId }: { clientId: string }) {
   useEffect(load, [clientId]);
 
   async function updateCheck(requirementId: string, patch: { met?: boolean; note?: string; dateMet?: string | null }) {
-    if (!data) return;
+    if (!data || !canEdit) return;
     // Optimistic update so typing/clicking feels immediate.
     setData({
       ...data,
@@ -123,8 +126,9 @@ function RequirementsTab({ clientId }: { clientId: string }) {
       <label className="flex items-start gap-3 flex-1 cursor-pointer">
         <input
           type="checkbox"
-          className="mt-1 rounded border-slate-300 dark:border-slate-700"
+          className="mt-1 rounded border-slate-300 dark:border-slate-700 disabled:cursor-not-allowed"
           checked={r.met}
+          disabled={!canEdit}
           onChange={(e) => updateCheck(r.id, { met: e.target.checked, dateMet: e.target.checked ? todayISO() : null })}
         />
         <span>
@@ -144,11 +148,13 @@ function RequirementsTab({ clientId }: { clientId: string }) {
           type="date"
           className={`${inputClass} !py-1.5 text-xs`}
           value={r.dateMet ?? ""}
+          disabled={!canEdit}
           onChange={(e) => updateCheck(r.id, { dateMet: e.target.value || null })}
         />
         <input
           className={`${inputClass} !py-1.5 text-xs`}
           value={r.note}
+          disabled={!canEdit}
           onChange={(e) => updateCheck(r.id, { note: e.target.value })}
           placeholder="Note (optional)"
         />
@@ -211,7 +217,7 @@ const emptyEndorsementForm = {
   notes: "",
 };
 
-function EndorsementsTab({ clientId }: { clientId: string }) {
+function EndorsementsTab({ clientId, canEdit }: { clientId: string; canEdit: boolean }) {
   const [endorsements, setEndorsements] = useState<EndorsementRecord[]>([]);
   const [templates, setTemplates] = useState<EndorsementTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,18 +285,20 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      <div className="mb-4 flex justify-end">
-        <Button
-          onClick={() => {
-            setForm(emptyEndorsementForm);
-            setShowForm((s) => !s);
-          }}
-        >
-          Add Endorsement
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            onClick={() => {
+              setForm(emptyEndorsementForm);
+              setShowForm((s) => !s);
+            }}
+          >
+            Add Endorsement
+          </Button>
+        </div>
+      )}
 
-      {showForm && (
+      {showForm && canEdit && (
         <Card className="p-5 mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -391,7 +399,7 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
                   <th className="px-5 py-2 font-medium">Given By</th>
                   <th className="px-5 py-2 font-medium">Date</th>
                   <th className="px-5 py-2 font-medium">Expires</th>
-                  <th className="px-5 py-2 font-medium text-right">Actions</th>
+                  {canEdit && <th className="px-5 py-2 font-medium text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -410,17 +418,19 @@ function EndorsementsTab({ clientId }: { clientId: string }) {
                           <span className="text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-2.5">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800"
-                            onClick={() => remove(record)}
-                            title="Delete"
-                          >
-                            <TrashIcon width={16} height={16} />
-                          </button>
-                        </div>
-                      </td>
+                      {canEdit && (
+                        <td className="px-5 py-2.5">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-slate-800"
+                              onClick={() => remove(record)}
+                              title="Delete"
+                            >
+                              <TrashIcon width={16} height={16} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

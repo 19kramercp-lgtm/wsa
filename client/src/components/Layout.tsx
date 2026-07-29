@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   BookIcon,
   BuildingIcon,
+  CalendarIcon,
   CloseIcon,
+  DocumentIcon,
   ExpenseIcon,
   GraduationCapIcon,
   HomeIcon,
   JournalIcon,
   LedgerIcon,
+  LogoutIcon,
   MenuIcon,
   PlaneIcon,
   RepeatIcon,
   ReportsIcon,
   RevenueIcon,
+  ShieldIcon,
   UsersIcon,
 } from "./Icons";
 
@@ -31,14 +36,28 @@ const ACCOUNTING_NAV_ITEMS = [
   { to: "/expenses", label: "Expenses", icon: ExpenseIcon },
   { to: "/recurring", label: "Recurring Transactions", icon: RepeatIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
+  { to: "/user-accounts", label: "User Accounts", icon: ShieldIcon },
 ];
 
-const TRAINING_NAV_ITEMS = [{ to: "/training/students", label: "Students", icon: UsersIcon, end: true }];
+const TRAINING_NAV_ITEMS = [
+  { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
+  { to: "/training/materials", label: "Training Materials", icon: DocumentIcon },
+  { to: "/training/calendar", label: "Calendar", icon: CalendarIcon },
+];
+
+const ROLE_LABELS: Record<string, string> = {
+  administrator: "Administrator",
+  instructor: "Instructor",
+  student: "Student",
+};
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === "administrator";
+
   const [mode, setMode] = useState<Mode>(() =>
     typeof window !== "undefined" && window.localStorage.getItem(MODE_STORAGE_KEY) === "training"
       ? "training"
@@ -46,12 +65,12 @@ export default function Layout() {
   );
 
   useEffect(() => {
-    const shouldBeTraining = location.pathname.startsWith("/training");
+    const shouldBeTraining = !isAdmin || location.pathname.startsWith("/training");
     setMode((current) => {
       const next: Mode = shouldBeTraining ? "training" : "accounting";
       return current === next ? current : next;
     });
-  }, [location.pathname]);
+  }, [location.pathname, isAdmin]);
 
   function switchMode(next: Mode) {
     if (next === mode) return;
@@ -59,6 +78,11 @@ export default function Layout() {
     window.localStorage.setItem(MODE_STORAGE_KEY, next);
     navigate(next === "training" ? "/training/students" : "/");
     setMenuOpen(false);
+  }
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
   }
 
   const navItems = mode === "training" ? TRAINING_NAV_ITEMS : ACCOUNTING_NAV_ITEMS;
@@ -99,26 +123,28 @@ export default function Layout() {
           </button>
         </div>
 
-        <div className="px-3 pt-3">
-          <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
-            <button
-              onClick={() => switchMode("accounting")}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                mode === "accounting" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
-              }`}
-            >
-              <ReportsIcon width={14} height={14} /> Accounting
-            </button>
-            <button
-              onClick={() => switchMode("training")}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                mode === "training" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
-              }`}
-            >
-              <GraduationCapIcon width={14} height={14} /> Training
-            </button>
+        {isAdmin && (
+          <div className="px-3 pt-3">
+            <div className="flex gap-1 rounded-lg bg-slate-800 p-1">
+              <button
+                onClick={() => switchMode("accounting")}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  mode === "accounting" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <ReportsIcon width={14} height={14} /> Accounting
+              </button>
+              <button
+                onClick={() => switchMode("training")}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  mode === "training" ? "bg-brand-600 text-white shadow-sm" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <GraduationCapIcon width={14} height={14} /> Training
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <nav className="px-3 py-4 space-y-1">
           {navItems.map(({ to, label, icon: Icon, end }) => (
@@ -141,8 +167,21 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 inset-x-0 px-5 py-4 text-xs text-slate-500 border-t border-slate-800">
-          Data saved locally to file
+        <div className="absolute bottom-0 inset-x-0 px-5 py-4 border-t border-slate-800">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-slate-400">{user ? ROLE_LABELS[user.role] : ""}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="shrink-0 p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-800"
+              aria-label="Log out"
+              title="Log out"
+            >
+              <LogoutIcon width={18} height={18} />
+            </button>
+          </div>
         </div>
       </aside>
 

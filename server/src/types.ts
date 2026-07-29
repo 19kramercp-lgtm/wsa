@@ -120,6 +120,43 @@ export interface RequirementCheck {
   updatedAt: string;
 }
 
+export type UserRole = "administrator" | "instructor" | "student";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  clientId: string | null;
+  createdAt: string;
+}
+
+export type SafeUser = Omit<User, "passwordHash">;
+
+export interface TrainingMaterial {
+  id: string;
+  title: string;
+  category: CertificateTrack;
+  description: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:MM, optional
+  endTime: string; // HH:MM, optional
+  studentClientId: string | null;
+  instructorName: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Database {
   accounts: Account[];
   journalEntries: JournalEntry[];
@@ -129,7 +166,11 @@ export interface Database {
   recurringTransactions: RecurringTransaction[];
   endorsements: EndorsementRecord[];
   requirementChecks: RequirementCheck[];
+  users: User[];
+  trainingMaterials: TrainingMaterial[];
+  calendarEvents: CalendarEvent[];
   meta: {
     nextJournalNumber: number;
+    authSecret: string;
   };
 }

@@ -1,8 +1,10 @@
 import { promises as fs } from "fs";
 import path from "path";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
-import type { Account, CashFlowCategory, ClosedPeriod, Database, JournalEntry, RecurringFrequency } from "./types.js";
+import { hashPassword } from "./password.js";
+import type { Account, CashFlowCategory, ClosedPeriod, Database, JournalEntry, RecurringFrequency, User } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR ? process.env.DATA_DIR : path.join(__dirname, "..", "data");
@@ -98,6 +100,23 @@ function seedAccounts(): Account[] {
   ];
 }
 
+// Seeds a single administrator account so the app is usable on first run.
+// The password is deliberately simple and meant to be changed immediately
+// after the first login (there's a "Change Password" option once signed in).
+function seedUsers(): User[] {
+  return [
+    {
+      id: uuidv4(),
+      name: "Administrator",
+      email: "admin@wingspanaviation.test",
+      passwordHash: hashPassword("wingspan-admin"),
+      role: "administrator",
+      clientId: null,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
 function defaultDatabase(): Database {
   return {
     accounts: seedAccounts(),
@@ -108,7 +127,10 @@ function defaultDatabase(): Database {
     recurringTransactions: [],
     endorsements: [],
     requirementChecks: [],
-    meta: { nextJournalNumber: 1 },
+    users: seedUsers(),
+    trainingMaterials: [],
+    calendarEvents: [],
+    meta: { nextJournalNumber: 1, authSecret: crypto.randomBytes(32).toString("hex") },
   };
 }
 
@@ -129,6 +151,10 @@ function migrate(db: Database): Database {
   if (!db.recurringTransactions) db.recurringTransactions = [];
   if (!db.endorsements) db.endorsements = [];
   if (!db.requirementChecks) db.requirementChecks = [];
+  if (!db.users || db.users.length === 0) db.users = seedUsers();
+  if (!db.trainingMaterials) db.trainingMaterials = [];
+  if (!db.calendarEvents) db.calendarEvents = [];
+  if (!db.meta.authSecret) db.meta.authSecret = crypto.randomBytes(32).toString("hex");
   for (const endorsement of db.endorsements as unknown as Record<string, unknown>[]) {
     if (typeof endorsement.instructorName !== "string") endorsement.instructorName = "";
     delete endorsement.instructorId;

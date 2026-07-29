@@ -280,3 +280,37 @@ export interface StudentRequirementsResponse {
   clientId: string;
   byCertificate: { certificate: CertificateTrack; requirements: Far61RequirementStatus[] }[];
 }
+
+export type UserRole = "administrator" | "instructor" | "student";
+
+export interface SafeUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  clientId: string | null;
+  createdAt: string;
+}
+
+export interface TrainingMaterial {
+  id: string;
+  title: string;
+  category: CertificateTrack;
+  description: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  studentClientId: string | null;
+  instructorName: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
