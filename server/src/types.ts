@@ -152,8 +152,29 @@ export type CalendarSessionType = "flight" | "ground";
 
 export interface Aircraft {
   id: string;
-  name: string; // e.g. "N12345 — Cessna 172"
+  tailNumber: string; // e.g. "N12345"
+  make: string;
+  model: string;
+  category: string; // e.g. "Airplane"
+  class: string; // e.g. "Single-Engine Land"
+  complex: boolean;
+  highPerformance: boolean;
+  tailwheel: boolean;
   active: boolean;
+  // Weight & Balance
+  emptyWeight: number | null; // lbs
+  emptyWeightCG: number | null; // in
+  usefulLoad: number | null; // lbs
+  maxGrossWeight: number | null; // lbs
+  cgRangeForward: number | null; // in
+  cgRangeAft: number | null; // in
+  // Airplane Details
+  engine: string;
+  horsepower: number | null;
+  fuelCapacity: number | null; // gal, total
+  usableFuel: number | null; // gal
+  oilCapacity: number | null; // qt
+  cruiseSpeed: number | null; // kts
   createdAt: string;
 }
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import { fullName, readDatabase, writeDatabase } from "../db.js";
+import { aircraftLabel, fullName, readDatabase, writeDatabase } from "../db.js";
 import type { CalendarEvent, CalendarSessionType, Database } from "../types.js";
 
 const router = Router();
@@ -31,10 +31,9 @@ function generateTitle(
   const student = db.clients.find((c) => c.id === params.studentClientId);
   const studentName = student ? fullName(student) : "Unknown Student";
   const sessionLabel = params.sessionType === "flight" ? "Flight" : "Ground";
+  const aircraft = db.aircraft.find((a) => a.id === params.aircraftId);
   const resourceName =
-    params.sessionType === "flight"
-      ? db.aircraft.find((a) => a.id === params.aircraftId)?.name
-      : db.classrooms.find((c) => c.id === params.classroomId)?.name;
+    params.sessionType === "flight" ? (aircraft ? aircraftLabel(aircraft) : undefined) : db.classrooms.find((c) => c.id === params.classroomId)?.name;
   return resourceName ? `${studentName} — ${sessionLabel} (${resourceName})` : `${studentName} — ${sessionLabel}`;
 }
 

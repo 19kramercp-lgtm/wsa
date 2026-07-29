@@ -30,6 +30,11 @@ export function clientAddress(client: { street: string; city: string; state: str
   return [client.street, cityStateZip].filter(Boolean).join(", ");
 }
 
+export function aircraftLabel(aircraft: { tailNumber: string; make: string; model: string }): string {
+  const makeModel = [aircraft.make, aircraft.model].filter(Boolean).join(" ");
+  return makeModel ? `${aircraft.tailNumber} — ${makeModel}` : aircraft.tailNumber;
+}
+
 export function formatPhoneNumber(value: string): string {
   let digits = value.replace(/\D/g, "");
   if (digits.length > 10 && digits.startsWith("1")) {

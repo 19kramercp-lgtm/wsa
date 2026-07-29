@@ -309,8 +309,27 @@ export type CalendarSessionType = "flight" | "ground";
 
 export interface Aircraft {
   id: string;
-  name: string;
+  tailNumber: string;
+  make: string;
+  model: string;
+  category: string;
+  class: string;
+  complex: boolean;
+  highPerformance: boolean;
+  tailwheel: boolean;
   active: boolean;
+  emptyWeight: number | null;
+  emptyWeightCG: number | null;
+  usefulLoad: number | null;
+  maxGrossWeight: number | null;
+  cgRangeForward: number | null;
+  cgRangeAft: number | null;
+  engine: string;
+  horsepower: number | null;
+  fuelCapacity: number | null;
+  usableFuel: number | null;
+  oilCapacity: number | null;
+  cruiseSpeed: number | null;
   createdAt: string;
 }
 

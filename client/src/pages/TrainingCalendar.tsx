@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useClients } from "../utils/useClients";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { PlusIcon, TrashIcon, EditIcon } from "../components/Icons";
-import { fullName, todayISO } from "../utils/format";
+import { aircraftLabel, fullName, todayISO } from "../utils/format";
 import type { Aircraft, CalendarEvent, CalendarSessionType, Classroom } from "../types";
 
 const NEW_OPTION = "__new__";
@@ -100,6 +101,8 @@ export default function TrainingCalendar() {
     return map;
   }, [events]);
 
+  const aircraftById = useMemo(() => new Map(aircraft.map((a) => [a.id, a])), [aircraft]);
+
   const today = todayISO();
   const selectedEvents = (eventsByDate.get(selectedDate) ?? []).slice().sort((a, b) => a.startTime.localeCompare(b.startTime));
 
@@ -126,22 +129,6 @@ export default function TrainingCalendar() {
       instructorName: ev.instructorName,
     });
     setShowForm(true);
-  }
-
-  async function handleAircraftSelect(value: string) {
-    if (value !== NEW_OPTION) {
-      setForm((f) => ({ ...f, aircraftId: value }));
-      return;
-    }
-    const name = prompt("Aircraft name (e.g. N12345 — Cessna 172)");
-    if (!name || !name.trim()) return;
-    try {
-      const created = await api.aircraft.create(name.trim());
-      setAircraft((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)));
-      setForm((f) => ({ ...f, aircraftId: created.id }));
-    } catch (err) {
-      setError((err as Error).message);
-    }
   }
 
   async function handleClassroomSelect(value: string) {
@@ -333,7 +320,7 @@ export default function TrainingCalendar() {
                         <p className="text-xs text-slate-500 mt-0.5">Instructor: {ev.instructorName}</p>
                         {ev.sessionType === "flight" && ev.aircraftId && (
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Aircraft: {aircraft.find((a) => a.id === ev.aircraftId)?.name ?? "Unknown"}
+                            Aircraft: {ev.aircraftId && aircraftById.has(ev.aircraftId) ? aircraftLabel(aircraftById.get(ev.aircraftId)!) : "Unknown"}
                           </p>
                         )}
                         {ev.sessionType === "ground" && ev.classroomId && (
@@ -413,20 +400,30 @@ export default function TrainingCalendar() {
               </select>
             </Field>
             {form.sessionType === "flight" ? (
-              <Field label="Aircraft">
+              <Field
+                label="Aircraft"
+                hint={
+                  aircraft.length === 0 ? (
+                    <Link to="/training/aircraft" className="text-brand-600 hover:underline">
+                      Add one on the Aircraft page
+                    </Link>
+                  ) : undefined
+                }
+              >
                 <select
                   className={inputClass}
                   value={form.aircraftId}
-                  onChange={(e) => handleAircraftSelect(e.target.value)}
+                  onChange={(e) => setForm({ ...form, aircraftId: e.target.value })}
                   required
                 >
                   <option value="">Select aircraft…</option>
-                  {aircraft.filter((a) => a.active || a.id === form.aircraftId).map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                  <option value={NEW_OPTION}>+ Add new aircraft…</option>
+                  {aircraft
+                    .filter((a) => a.active || a.id === form.aircraftId)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {aircraftLabel(a)}
+                      </option>
+                    ))}
                 </select>
               </Field>
             ) : (

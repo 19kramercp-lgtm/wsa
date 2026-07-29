@@ -80,7 +80,7 @@ export function Field({
   label,
   children,
   hint,
-}: PropsWithChildren<{ label: string; hint?: string }>) {
+}: PropsWithChildren<{ label: string; hint?: ReactNode }>) {
   return (
     <label className="block">
       <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</span>

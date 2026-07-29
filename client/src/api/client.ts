@@ -271,8 +271,8 @@ export const api = {
   },
   aircraft: {
     list: () => request<Aircraft[]>("/aircraft"),
-    create: (name: string) => request<Aircraft>("/aircraft", { method: "POST", body: JSON.stringify({ name }) }),
-    update: (id: string, data: Partial<Pick<Aircraft, "name" | "active">>) =>
+    create: (data: Partial<Aircraft>) => request<Aircraft>("/aircraft", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Aircraft>) =>
       request<Aircraft>(`/aircraft/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/aircraft/${id}`, { method: "DELETE" }),
   },

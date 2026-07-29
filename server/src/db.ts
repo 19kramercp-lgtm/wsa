@@ -175,6 +175,30 @@ function migrate(db: Database): boolean {
   }
   for (const item of db.aircraft as unknown as Record<string, unknown>[]) {
     if (typeof item.active !== "boolean") { item.active = true; changed = true; }
+    if (typeof item.tailNumber !== "string") {
+      item.tailNumber = typeof item.name === "string" ? item.name : "";
+      changed = true;
+    }
+    if ("name" in item) { delete item.name; changed = true; }
+    if (typeof item.make !== "string") { item.make = ""; changed = true; }
+    if (typeof item.model !== "string") { item.model = ""; changed = true; }
+    if (typeof item.category !== "string") { item.category = ""; changed = true; }
+    if (typeof item.class !== "string") { item.class = ""; changed = true; }
+    if (typeof item.complex !== "boolean") { item.complex = false; changed = true; }
+    if (typeof item.highPerformance !== "boolean") { item.highPerformance = false; changed = true; }
+    if (typeof item.tailwheel !== "boolean") { item.tailwheel = false; changed = true; }
+    if (item.emptyWeight === undefined) { item.emptyWeight = null; changed = true; }
+    if (item.emptyWeightCG === undefined) { item.emptyWeightCG = null; changed = true; }
+    if (item.usefulLoad === undefined) { item.usefulLoad = null; changed = true; }
+    if (item.maxGrossWeight === undefined) { item.maxGrossWeight = null; changed = true; }
+    if (item.cgRangeForward === undefined) { item.cgRangeForward = null; changed = true; }
+    if (item.cgRangeAft === undefined) { item.cgRangeAft = null; changed = true; }
+    if (typeof item.engine !== "string") { item.engine = ""; changed = true; }
+    if (item.horsepower === undefined) { item.horsepower = null; changed = true; }
+    if (item.fuelCapacity === undefined) { item.fuelCapacity = null; changed = true; }
+    if (item.usableFuel === undefined) { item.usableFuel = null; changed = true; }
+    if (item.oilCapacity === undefined) { item.oilCapacity = null; changed = true; }
+    if (item.cruiseSpeed === undefined) { item.cruiseSpeed = null; changed = true; }
   }
   for (const material of db.trainingMaterials as unknown as Record<string, unknown>[]) {
     if (material.fileName === undefined) { material.fileName = null; changed = true; }
@@ -364,6 +388,11 @@ export function isPeriodClosed(date: string, closedPeriods: ClosedPeriod[]): boo
 
 export function fullName(client: { firstName: string; lastName: string }): string {
   return `${client.firstName} ${client.lastName}`.trim();
+}
+
+export function aircraftLabel(aircraft: { tailNumber: string; make: string; model: string }): string {
+  const makeModel = [aircraft.make, aircraft.model].filter(Boolean).join(" ");
+  return makeModel ? `${aircraft.tailNumber} — ${makeModel}` : aircraft.tailNumber;
 }
 
 export { DATA_FILE, UPLOADS_DIR };

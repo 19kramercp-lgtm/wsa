@@ -40,11 +40,11 @@ const ACCOUNTING_NAV_ITEMS = [
 ];
 
 const TRAINING_NAV_ITEMS = [
+  { to: "/training/calendar", label: "Calendar", icon: CalendarIcon },
   { to: "/training/students", label: "Students", icon: UsersIcon, end: true },
   { to: "/training/instructors", label: "Instructors", icon: GraduationCapIcon },
-  { to: "/training/materials", label: "Training Materials", icon: DocumentIcon },
-  { to: "/training/calendar", label: "Calendar", icon: CalendarIcon },
   { to: "/training/aircraft", label: "Aircraft", icon: PlaneIcon },
+  { to: "/training/materials", label: "Training Materials", icon: DocumentIcon },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
