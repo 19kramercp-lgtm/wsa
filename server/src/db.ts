@@ -144,30 +144,43 @@ export function inferCashFlowCategory(account: Pick<Account, "type" | "name">): 
   return /aircraft|equipment|simulator|depreciation|vehicle|building/i.test(account.name) ? "investing" : "operating";
 }
 
-function migrate(db: Database): Database {
-  if (!db.closedPeriods) db.closedPeriods = [];
-  if (!db.clients) db.clients = [];
-  if (!db.vendors) db.vendors = [];
-  if (!db.recurringTransactions) db.recurringTransactions = [];
-  if (!db.endorsements) db.endorsements = [];
-  if (!db.requirementChecks) db.requirementChecks = [];
-  if (!db.users || db.users.length === 0) db.users = seedUsers();
-  if (!db.trainingMaterials) db.trainingMaterials = [];
-  if (!db.calendarEvents) db.calendarEvents = [];
-  if (!db.meta.authSecret) db.meta.authSecret = crypto.randomBytes(32).toString("hex");
+// Mutates db in place to backfill any fields missing from an older data
+// file, and returns whether anything was actually added/changed — callers
+// must persist the result when true, since these defaults (especially
+// meta.authSecret) need to be stable across requests, not regenerated
+// fresh in memory every time the file is read.
+function migrate(db: Database): boolean {
+  let changed = false;
+  if (!db.closedPeriods) { db.closedPeriods = []; changed = true; }
+  if (!db.clients) { db.clients = []; changed = true; }
+  if (!db.vendors) { db.vendors = []; changed = true; }
+  if (!db.recurringTransactions) { db.recurringTransactions = []; changed = true; }
+  if (!db.endorsements) { db.endorsements = []; changed = true; }
+  if (!db.requirementChecks) { db.requirementChecks = []; changed = true; }
+  if (!db.users || db.users.length === 0) { db.users = seedUsers(); changed = true; }
+  if (!db.trainingMaterials) { db.trainingMaterials = []; changed = true; }
+  if (!db.calendarEvents) { db.calendarEvents = []; changed = true; }
+  if (!db.meta.authSecret) { db.meta.authSecret = crypto.randomBytes(32).toString("hex"); changed = true; }
   for (const endorsement of db.endorsements as unknown as Record<string, unknown>[]) {
-    if (typeof endorsement.instructorName !== "string") endorsement.instructorName = "";
-    delete endorsement.instructorId;
+    if (typeof endorsement.instructorName !== "string") {
+      endorsement.instructorName = "";
+      changed = true;
+    }
+    if ("instructorId" in endorsement) {
+      delete endorsement.instructorId;
+      changed = true;
+    }
   }
   for (const account of db.accounts) {
     if (!account.cashFlowCategory) {
       account.cashFlowCategory = inferCashFlowCategory(account);
+      changed = true;
     }
   }
   for (const entry of db.journalEntries as unknown as Record<string, unknown>[]) {
-    if (entry.clientId === undefined) entry.clientId = null;
-    if (entry.vendorId === undefined) entry.vendorId = null;
-    if (entry.recurringTransactionId === undefined) entry.recurringTransactionId = null;
+    if (entry.clientId === undefined) { entry.clientId = null; changed = true; }
+    if (entry.vendorId === undefined) { entry.vendorId = null; changed = true; }
+    if (entry.recurringTransactionId === undefined) { entry.recurringTransactionId = null; changed = true; }
   }
   for (const client of db.clients as unknown as Record<string, unknown>[]) {
     if (typeof client.firstName !== "string") {
@@ -176,6 +189,7 @@ function migrate(db: Database): Database {
       client.firstName = spaceIndex === -1 ? legacyName : legacyName.slice(0, spaceIndex);
       client.lastName = spaceIndex === -1 ? "" : legacyName.slice(spaceIndex + 1);
       delete client.name;
+      changed = true;
     }
     if (typeof client.street !== "string") {
       client.street = typeof client.address === "string" ? client.address : "";
@@ -183,9 +197,10 @@ function migrate(db: Database): Database {
       client.state = "";
       client.zip = "";
       delete client.address;
+      changed = true;
     }
   }
-  return db;
+  return changed;
 }
 
 export function addInterval(dateISO: string, frequency: RecurringFrequency): string {
@@ -301,9 +316,10 @@ async function ensureDataFile(): Promise<void> {
 export async function readDatabase(): Promise<Database> {
   await ensureDataFile();
   const raw = await fs.readFile(DATA_FILE, "utf-8");
-  const db = migrate(JSON.parse(raw) as Database);
+  const db = JSON.parse(raw) as Database;
+  const migrated = migrate(db);
   const { created } = processDueRecurring(db);
-  if (created > 0) {
+  if (migrated || created > 0) {
     await writeDatabase(db);
   }
   return db;
