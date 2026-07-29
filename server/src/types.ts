@@ -144,13 +144,30 @@ export interface TrainingMaterial {
   updatedAt: string;
 }
 
+export type CalendarSessionType = "flight" | "ground";
+
+export interface Aircraft {
+  id: string;
+  name: string; // e.g. "N12345 — Cessna 172"
+  createdAt: string;
+}
+
+export interface Classroom {
+  id: string;
+  name: string; // e.g. "Briefing Room A"
+  createdAt: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM, optional
-  endTime: string; // HH:MM, optional
-  studentClientId: string | null;
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
+  sessionType: CalendarSessionType;
+  aircraftId: string | null;
+  classroomId: string | null;
+  studentClientId: string;
   instructorName: string;
   notes: string;
   createdAt: string;
@@ -169,6 +186,8 @@ export interface Database {
   users: User[];
   trainingMaterials: TrainingMaterial[];
   calendarEvents: CalendarEvent[];
+  aircraft: Aircraft[];
+  classrooms: Classroom[];
   meta: {
     nextJournalNumber: number;
     authSecret: string;

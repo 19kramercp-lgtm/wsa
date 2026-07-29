@@ -5,7 +5,9 @@ import { useClients } from "../utils/useClients";
 import { Alert, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
 import { PlusIcon, TrashIcon, EditIcon } from "../components/Icons";
 import { fullName, todayISO } from "../utils/format";
-import type { CalendarEvent } from "../types";
+import type { Aircraft, CalendarEvent, CalendarSessionType, Classroom } from "../types";
+
+const NEW_OPTION = "__new__";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -34,7 +36,17 @@ function buildMonthGrid(monthDate: Date): (Date | null)[][] {
   return weeks;
 }
 
-const emptyForm = { title: "", startTime: "", endTime: "", studentClientId: "", instructorName: "", notes: "" };
+const emptyForm = {
+  title: "",
+  startTime: "",
+  endTime: "",
+  sessionType: "flight" as CalendarSessionType,
+  aircraftId: "",
+  classroomId: "",
+  studentClientId: "",
+  instructorName: "",
+  notes: "",
+};
 
 export default function TrainingCalendar() {
   const { user } = useAuth();
@@ -53,6 +65,16 @@ export default function TrainingCalendar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+
+  const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+
+  function loadResources() {
+    api.aircraft.list().then(setAircraft).catch(() => undefined);
+    api.classrooms.list().then(setClassrooms).catch(() => undefined);
+  }
+
+  useEffect(loadResources, []);
 
   function load() {
     setLoading(true);
@@ -100,11 +122,46 @@ export default function TrainingCalendar() {
       title: ev.title,
       startTime: ev.startTime,
       endTime: ev.endTime,
-      studentClientId: ev.studentClientId ?? "",
+      sessionType: ev.sessionType,
+      aircraftId: ev.aircraftId ?? "",
+      classroomId: ev.classroomId ?? "",
+      studentClientId: ev.studentClientId,
       instructorName: ev.instructorName,
       notes: ev.notes,
     });
     setShowForm(true);
+  }
+
+  async function handleAircraftSelect(value: string) {
+    if (value !== NEW_OPTION) {
+      setForm((f) => ({ ...f, aircraftId: value }));
+      return;
+    }
+    const name = prompt("Aircraft name (e.g. N12345 — Cessna 172)");
+    if (!name || !name.trim()) return;
+    try {
+      const created = await api.aircraft.create(name.trim());
+      setAircraft((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((f) => ({ ...f, aircraftId: created.id }));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function handleClassroomSelect(value: string) {
+    if (value !== NEW_OPTION) {
+      setForm((f) => ({ ...f, classroomId: value }));
+      return;
+    }
+    const name = prompt("Classroom name (e.g. Briefing Room A)");
+    if (!name || !name.trim()) return;
+    try {
+      const created = await api.classrooms.create(name.trim());
+      setClassrooms((list) => [...list, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((f) => ({ ...f, classroomId: created.id }));
+    } catch (err) {
+      setError((err as Error).message);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -112,7 +169,12 @@ export default function TrainingCalendar() {
     setError(null);
     setSaving(true);
     try {
-      const payload = { ...form, date: selectedDate, studentClientId: form.studentClientId || null };
+      const payload = {
+        ...form,
+        date: selectedDate,
+        aircraftId: form.sessionType === "flight" ? form.aircraftId || null : null,
+        classroomId: form.sessionType === "ground" ? form.classroomId || null : null,
+      };
       if (editingId) {
         await api.calendar.update(editingId, payload);
       } else {
@@ -250,7 +312,18 @@ export default function TrainingCalendar() {
                   <div key={ev.id} className="rounded-lg border border-slate-200 dark:border-slate-800 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{ev.title}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{ev.title}</p>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              ev.sessionType === "flight"
+                                ? "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                            }`}
+                          >
+                            {ev.sessionType === "flight" ? "Flight" : "Ground"}
+                          </span>
+                        </div>
                         {(ev.startTime || ev.endTime) && (
                           <p className="text-xs text-slate-500 mt-0.5">
                             {ev.startTime}
@@ -258,12 +331,20 @@ export default function TrainingCalendar() {
                             {ev.endTime}
                           </p>
                         )}
-                        {ev.studentClientId && (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Student: {fullName(clients.find((c) => c.id === ev.studentClientId) ?? { firstName: "Unknown", lastName: "" })}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">Instructor: {ev.instructorName}</p>
+                        {ev.sessionType === "flight" && ev.aircraftId && (
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Student: {fullName(clients.find((c) => c.id === ev.studentClientId) ?? { firstName: "Unknown", lastName: "" })}
+                            Aircraft: {aircraft.find((a) => a.id === ev.aircraftId)?.name ?? "Unknown"}
                           </p>
                         )}
-                        {ev.instructorName && <p className="text-xs text-slate-500 mt-0.5">Instructor: {ev.instructorName}</p>}
+                        {ev.sessionType === "ground" && ev.classroomId && (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Classroom: {classrooms.find((c) => c.id === ev.classroomId)?.name ?? "Unknown"}
+                          </p>
+                        )}
                         {ev.notes && <p className="text-xs text-slate-400 mt-1">{ev.notes}</p>}
                       </div>
                       {canEdit && (
@@ -317,13 +398,60 @@ export default function TrainingCalendar() {
                 required
               />
             </Field>
-            <Field label="Student (optional)">
+            <Field label="Session Type">
+              <select
+                className={inputClass}
+                value={form.sessionType}
+                onChange={(e) => setForm({ ...form, sessionType: e.target.value as CalendarSessionType })}
+                required
+              >
+                <option value="flight">Flight</option>
+                <option value="ground">Ground</option>
+              </select>
+            </Field>
+            {form.sessionType === "flight" ? (
+              <Field label="Aircraft">
+                <select
+                  className={inputClass}
+                  value={form.aircraftId}
+                  onChange={(e) => handleAircraftSelect(e.target.value)}
+                  required
+                >
+                  <option value="">Select aircraft…</option>
+                  {aircraft.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                  <option value={NEW_OPTION}>+ Add new aircraft…</option>
+                </select>
+              </Field>
+            ) : (
+              <Field label="Classroom">
+                <select
+                  className={inputClass}
+                  value={form.classroomId}
+                  onChange={(e) => handleClassroomSelect(e.target.value)}
+                  required
+                >
+                  <option value="">Select classroom…</option>
+                  {classrooms.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                  <option value={NEW_OPTION}>+ Add new classroom…</option>
+                </select>
+              </Field>
+            )}
+            <Field label="Student">
               <select
                 className={inputClass}
                 value={form.studentClientId}
                 onChange={(e) => setForm({ ...form, studentClientId: e.target.value })}
+                required
               >
-                <option value="">—</option>
+                <option value="">Select student…</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {fullName(c)}
@@ -331,31 +459,32 @@ export default function TrainingCalendar() {
                 ))}
               </select>
             </Field>
-            <Field label="Start Time (optional)">
+            <Field label="Instructor">
+              <input
+                className={inputClass}
+                value={form.instructorName}
+                onChange={(e) => setForm({ ...form, instructorName: e.target.value })}
+                required
+              />
+            </Field>
+            <Field label="Start Time">
               <input
                 type="time"
                 className={inputClass}
                 value={form.startTime}
                 onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                required
               />
             </Field>
-            <Field label="End Time (optional)">
+            <Field label="End Time">
               <input
                 type="time"
                 className={inputClass}
                 value={form.endTime}
                 onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                required
               />
             </Field>
-            <div className="sm:col-span-2">
-              <Field label="Instructor (optional)">
-                <input
-                  className={inputClass}
-                  value={form.instructorName}
-                  onChange={(e) => setForm({ ...form, instructorName: e.target.value })}
-                />
-              </Field>
-            </div>
             <div className="sm:col-span-2">
               <Field label="Notes (optional)">
                 <input

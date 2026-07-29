@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useClients } from "../utils/useClients";
 import { Alert, Badge, Button, Card, Field, PageHeader, inputClass } from "../components/ui";
+import { PasswordInput } from "../components/PasswordInput";
 import { EditIcon, PlusIcon, TrashIcon } from "../components/Icons";
 import { fullName, formatDate } from "../utils/format";
 import type { SafeUser, UserRole } from "../types";
@@ -172,9 +173,7 @@ export default function UserAccounts() {
                 label={form.id ? "New Password (optional)" : "Password"}
                 hint="At least 6 characters"
               >
-                <input
-                  type="password"
-                  className={inputClass}
+                <PasswordInput
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required={!form.id}

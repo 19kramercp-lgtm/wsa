@@ -130,6 +130,8 @@ function defaultDatabase(): Database {
     users: seedUsers(),
     trainingMaterials: [],
     calendarEvents: [],
+    aircraft: [],
+    classrooms: [],
     meta: { nextJournalNumber: 1, authSecret: crypto.randomBytes(32).toString("hex") },
   };
 }
@@ -160,7 +162,15 @@ function migrate(db: Database): boolean {
   if (!db.users || db.users.length === 0) { db.users = seedUsers(); changed = true; }
   if (!db.trainingMaterials) { db.trainingMaterials = []; changed = true; }
   if (!db.calendarEvents) { db.calendarEvents = []; changed = true; }
+  if (!db.aircraft) { db.aircraft = []; changed = true; }
+  if (!db.classrooms) { db.classrooms = []; changed = true; }
   if (!db.meta.authSecret) { db.meta.authSecret = crypto.randomBytes(32).toString("hex"); changed = true; }
+  for (const event of db.calendarEvents as unknown as Record<string, unknown>[]) {
+    if (typeof event.sessionType !== "string") { event.sessionType = "flight"; changed = true; }
+    if (event.aircraftId === undefined) { event.aircraftId = null; changed = true; }
+    if (event.classroomId === undefined) { event.classroomId = null; changed = true; }
+    if (typeof event.studentClientId !== "string") { event.studentClientId = event.studentClientId ?? ""; changed = true; }
+  }
   for (const endorsement of db.endorsements as unknown as Record<string, unknown>[]) {
     if (typeof endorsement.instructorName !== "string") {
       endorsement.instructorName = "";

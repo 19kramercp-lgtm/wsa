@@ -18,6 +18,8 @@ import endorsementsRouter from "./routes/endorsements.js";
 import requirementsRouter from "./routes/requirements.js";
 import trainingMaterialsRouter from "./routes/training-materials.js";
 import calendarRouter from "./routes/calendar.js";
+import aircraftRouter from "./routes/aircraft.js";
+import classroomsRouter from "./routes/classrooms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -80,6 +82,18 @@ app.use(
   requireAuth,
   (req, res, next) => (req.method === "GET" ? next() : write(req, res, next)),
   calendarRouter
+);
+app.use(
+  "/api/aircraft",
+  requireAuth,
+  (req, res, next) => (req.method === "GET" ? next() : write(req, res, next)),
+  aircraftRouter
+);
+app.use(
+  "/api/classrooms",
+  requireAuth,
+  (req, res, next) => (req.method === "GET" ? next() : write(req, res, next)),
+  classroomsRouter
 );
 
 // Serve the built client in production

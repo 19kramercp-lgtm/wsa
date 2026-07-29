@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Alert, Button, Field, inputClass } from "../components/ui";
+import { PasswordInput } from "../components/PasswordInput";
 import { PlaneIcon } from "../components/Icons";
 
 export default function Login() {
@@ -58,13 +59,7 @@ export default function Login() {
             />
           </Field>
           <Field label="Password">
-            <input
-              type="password"
-              className={inputClass}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
           </Field>
 
           <Button type="submit" className="w-full justify-center" disabled={submitting}>

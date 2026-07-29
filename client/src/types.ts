@@ -302,13 +302,30 @@ export interface TrainingMaterial {
   updatedAt: string;
 }
 
+export type CalendarSessionType = "flight" | "ground";
+
+export interface Aircraft {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface Classroom {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
   startTime: string;
   endTime: string;
-  studentClientId: string | null;
+  sessionType: CalendarSessionType;
+  aircraftId: string | null;
+  classroomId: string | null;
+  studentClientId: string;
   instructorName: string;
   notes: string;
   createdAt: string;

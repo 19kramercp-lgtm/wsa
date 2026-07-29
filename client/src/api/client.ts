@@ -2,9 +2,11 @@ import type {
   Account,
   AgedPayablesResponse,
   AgedReceivablesResponse,
+  Aircraft,
   BalanceSheetResponse,
   CalendarEvent,
   CashFlowResponse,
+  Classroom,
   Client,
   ClosedPeriod,
   EndorsementRecord,
@@ -224,5 +226,15 @@ export const api = {
     update: (id: string, data: Partial<CalendarEvent>) =>
       request<CalendarEvent>(`/calendar/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/calendar/${id}`, { method: "DELETE" }),
+  },
+  aircraft: {
+    list: () => request<Aircraft[]>("/aircraft"),
+    create: (name: string) => request<Aircraft>("/aircraft", { method: "POST", body: JSON.stringify({ name }) }),
+    remove: (id: string) => request<void>(`/aircraft/${id}`, { method: "DELETE" }),
+  },
+  classrooms: {
+    list: () => request<Classroom[]>("/classrooms"),
+    create: (name: string) => request<Classroom>("/classrooms", { method: "POST", body: JSON.stringify({ name }) }),
+    remove: (id: string) => request<void>(`/classrooms/${id}`, { method: "DELETE" }),
   },
 };
