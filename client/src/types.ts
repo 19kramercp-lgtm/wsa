@@ -281,6 +281,17 @@ export interface StudentRequirementsResponse {
   byCertificate: { certificate: CertificateTrack; requirements: Far61RequirementStatus[] }[];
 }
 
+export interface ActivityEntry {
+  id: string;
+  date: string;
+  memo: string;
+  reference: string;
+  amount: number;
+  accountName: string;
+  clientId: string;
+  studentName: string;
+}
+
 export type UserRole = "administrator" | "instructor" | "student";
 
 export interface SafeUser {

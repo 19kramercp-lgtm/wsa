@@ -21,6 +21,7 @@ import calendarRouter from "./routes/calendar.js";
 import aircraftRouter from "./routes/aircraft.js";
 import classroomsRouter from "./routes/classrooms.js";
 import instructorsRouter from "./routes/instructors.js";
+import activityRouter from "./routes/activity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -97,6 +98,7 @@ app.use(
   classroomsRouter
 );
 app.use("/api/instructors", requireAuth, instructorsRouter);
+app.use("/api/activity", requireAuth, activityRouter);
 
 // Serve the built client in production
 const clientDist = path.join(__dirname, "..", "..", "client", "dist");

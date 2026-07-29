@@ -19,6 +19,7 @@ import Instructors from "./pages/Instructors";
 import StudentProfile from "./pages/StudentProfile";
 import TrainingMaterials from "./pages/TrainingMaterials";
 import TrainingCalendar from "./pages/TrainingCalendar";
+import Activity from "./pages/Activity";
 import Aircraft from "./pages/Aircraft";
 import UserAccounts from "./pages/UserAccounts";
 
@@ -132,6 +133,7 @@ function App() {
             <Route path="training/instructors" element={<Instructors />} />
             <Route path="training/materials" element={<TrainingMaterials />} />
             <Route path="training/calendar" element={<TrainingCalendar />} />
+            <Route path="training/activity" element={<Activity />} />
             <Route path="training/aircraft" element={<Aircraft />} />
           </Route>
         </Routes>

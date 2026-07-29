@@ -1,5 +1,6 @@
 import type {
   Account,
+  ActivityEntry,
   AgedPayablesResponse,
   AgedReceivablesResponse,
   Aircraft,
@@ -224,6 +225,9 @@ export const api = {
   },
   instructors: {
     list: () => request<SafeUser[]>("/instructors"),
+  },
+  activity: {
+    list: (clientId?: string) => request<ActivityEntry[]>(`/activity${clientId ? `?clientId=${clientId}` : ""}`),
   },
   trainingMaterials: {
     list: (category?: string) =>
