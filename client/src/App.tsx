@@ -15,6 +15,7 @@ import Expenses from "./pages/Expenses";
 import Recurring from "./pages/Recurring";
 import Reports from "./pages/Reports";
 import Students from "./pages/Students";
+import Instructors from "./pages/Instructors";
 import StudentProfile from "./pages/StudentProfile";
 import TrainingMaterials from "./pages/TrainingMaterials";
 import TrainingCalendar from "./pages/TrainingCalendar";
@@ -128,6 +129,7 @@ function App() {
             />
             <Route path="training/students" element={<Students />} />
             <Route path="training/students/:clientId" element={<StudentProfile />} />
+            <Route path="training/instructors" element={<Instructors />} />
             <Route path="training/materials" element={<TrainingMaterials />} />
             <Route path="training/calendar" element={<TrainingCalendar />} />
             <Route path="training/aircraft" element={<Aircraft />} />

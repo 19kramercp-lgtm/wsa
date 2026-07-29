@@ -222,6 +222,9 @@ export const api = {
     ) => request<SafeUser>(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/users/${id}`, { method: "DELETE" }),
   },
+  instructors: {
+    list: () => request<SafeUser[]>("/instructors"),
+  },
   trainingMaterials: {
     list: (category?: string) =>
       request<TrainingMaterial[]>(`/training-materials${category ? `?category=${category}` : ""}`),

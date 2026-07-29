@@ -20,6 +20,7 @@ import trainingMaterialsRouter from "./routes/training-materials.js";
 import calendarRouter from "./routes/calendar.js";
 import aircraftRouter from "./routes/aircraft.js";
 import classroomsRouter from "./routes/classrooms.js";
+import instructorsRouter from "./routes/instructors.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -95,6 +96,7 @@ app.use(
   (req, res, next) => (req.method === "GET" ? next() : write(req, res, next)),
   classroomsRouter
 );
+app.use("/api/instructors", requireAuth, instructorsRouter);
 
 // Serve the built client in production
 const clientDist = path.join(__dirname, "..", "..", "client", "dist");
