@@ -196,6 +196,7 @@ export interface CalendarEvent {
   studentClientId: string;
   instructorName: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export type CommodityOptionType = "call" | "put";
