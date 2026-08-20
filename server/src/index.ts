@@ -14,6 +14,7 @@ import periodsRouter from "./routes/periods.js";
 import clientsRouter from "./routes/clients.js";
 import vendorsRouter from "./routes/vendors.js";
 import recurringRouter from "./routes/recurring.js";
+import commodityTradesRouter from "./routes/commodityTrades.js";
 import endorsementsRouter from "./routes/endorsements.js";
 import requirementsRouter from "./routes/requirements.js";
 import trainingMaterialsRouter from "./routes/training-materials.js";
@@ -49,6 +50,7 @@ app.use("/api/reports", requireAuth, requireRole("administrator"), reportsRouter
 app.use("/api/periods", requireAuth, requireRole("administrator"), periodsRouter);
 app.use("/api/vendors", requireAuth, requireRole("administrator"), vendorsRouter);
 app.use("/api/recurring", requireAuth, requireRole("administrator"), recurringRouter);
+app.use("/api/commodity-trades", requireAuth, requireRole("administrator"), commodityTradesRouter);
 app.use("/api/users", requireAuth, requireRole("administrator"), usersRouter);
 
 // Clients (students) — readable by any signed-in role, writes restricted to

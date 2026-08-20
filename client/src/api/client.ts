@@ -10,6 +10,7 @@ import type {
   Classroom,
   Client,
   ClosedPeriod,
+  CommodityTrade,
   EndorsementRecord,
   EndorsementTemplate,
   Far61Requirement,
@@ -181,6 +182,14 @@ export const api = {
     update: (id: string, data: Partial<RecurringTransaction>) =>
       request<RecurringTransaction>(`/recurring/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/recurring/${id}`, { method: "DELETE" }),
+  },
+  commodityTrades: {
+    list: () => request<CommodityTrade[]>("/commodity-trades"),
+    create: (data: Partial<CommodityTrade>) =>
+      request<CommodityTrade>("/commodity-trades", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<CommodityTrade>) =>
+      request<CommodityTrade>(`/commodity-trades/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/commodity-trades/${id}`, { method: "DELETE" }),
   },
   endorsements: {
     templates: () => request<EndorsementTemplate[]>("/endorsements/templates"),

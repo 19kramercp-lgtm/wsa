@@ -362,5 +362,25 @@ export interface CalendarEvent {
   studentClientId: string;
   instructorName: string;
   createdAt: string;
+}
+
+export type CommodityOptionType = "call" | "put";
+export type TradeSide = "long" | "short";
+
+export interface CommodityTrade {
+  id: string;
+  commodity: string;
+  optionType: CommodityOptionType;
+  side: TradeSide;
+  strikePrice: number;
+  expirationDate: string;
+  contracts: number;
+  multiplier: number;
+  entryPrice: number;
+  entryDate: string;
+  exitPrice: number | null;
+  exitDate: string | null;
+  notes: string;
+  createdAt: string;
   updatedAt: string;
 }

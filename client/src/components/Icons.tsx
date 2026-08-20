@@ -202,3 +202,17 @@ export const RepeatIcon = (props: SVGProps<SVGSVGElement>) => (
     <path d="M21 13v2a4 4 0 0 1-4 4H3" />
   </svg>
 );
+
+export const CandlestickIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg {...base(props)}>
+    <line x1="5" y1="3" x2="5" y2="8" />
+    <rect x="3" y="8" width="4" height="7" rx="0.5" />
+    <line x1="5" y1="15" x2="5" y2="21" />
+    <line x1="12" y1="6" x2="12" y2="10" />
+    <rect x="10" y="10" width="4" height="5" rx="0.5" />
+    <line x1="12" y1="15" x2="12" y2="19" />
+    <line x1="19" y1="9" x2="19" y2="13" />
+    <rect x="17" y="13" width="4" height="6" rx="0.5" />
+    <line x1="19" y1="19" x2="19" y2="21" />
+  </svg>
+);

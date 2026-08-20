@@ -5,6 +5,7 @@ import {
   BookIcon,
   BuildingIcon,
   CalendarIcon,
+  CandlestickIcon,
   CloseIcon,
   DocumentIcon,
   ExpenseIcon,
@@ -36,6 +37,7 @@ const ACCOUNTING_NAV_ITEMS = [
   { to: "/expenses", label: "Expenses", icon: ExpenseIcon },
   { to: "/recurring", label: "Recurring Transactions", icon: RepeatIcon },
   { to: "/reports", label: "Reports", icon: ReportsIcon },
+  { to: "/commodity-trading", label: "P/L Commodity Trading", icon: CandlestickIcon },
   { to: "/user-accounts", label: "User Accounts", icon: ShieldIcon },
 ];
 

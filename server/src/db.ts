@@ -133,6 +133,7 @@ function defaultDatabase(): Database {
     calendarEvents: [],
     aircraft: [],
     classrooms: [],
+    commodityTrades: [],
     meta: { nextJournalNumber: 1, authSecret: crypto.randomBytes(32).toString("hex") },
   };
 }
@@ -158,6 +159,7 @@ function migrate(db: Database): boolean {
   if (!db.clients) { db.clients = []; changed = true; }
   if (!db.vendors) { db.vendors = []; changed = true; }
   if (!db.recurringTransactions) { db.recurringTransactions = []; changed = true; }
+  if (!db.commodityTrades) { db.commodityTrades = []; changed = true; }
   if (!db.endorsements) { db.endorsements = []; changed = true; }
   if (!db.requirementChecks) { db.requirementChecks = []; changed = true; }
   if (!db.users || db.users.length === 0) { db.users = seedUsers(); changed = true; }

@@ -14,6 +14,7 @@ import Revenues from "./pages/Revenues";
 import Expenses from "./pages/Expenses";
 import Recurring from "./pages/Recurring";
 import Reports from "./pages/Reports";
+import CommodityTrading from "./pages/CommodityTrading";
 import Students from "./pages/Students";
 import Instructors from "./pages/Instructors";
 import StudentProfile from "./pages/StudentProfile";
@@ -117,6 +118,14 @@ function App() {
               element={
                 <RequireRole roles={ADMIN}>
                   <Reports />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="commodity-trading"
+              element={
+                <RequireRole roles={ADMIN}>
+                  <CommodityTrading />
                 </RequireRole>
               }
             />
